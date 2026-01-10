@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # 1. بناء ملفات الأندرويد والويب (تعمل على Ubuntu لتوفير التكلفة والوقت)
+  # 1. بناء ملفات الأندرويد (APK + AAB) والويب
   build-android-web:
     runs-on: ubuntu-latest
     steps:
@@ -28,16 +28,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Android Bundle (AAB)
-        run: flutter build appbundle --release --no-codesign
+      - name: Build Android APK (For Testing)
+        run: flutter build apk --release
+
+      - name: Build Android Bundle (For Google Play)
+        run: flutter build appbundle --release
 
       - name: Build Web
         run: flutter build web --release
 
-      - name: Upload Android Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-release
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
           path: build/app/outputs/bundle/release/app-release.aab
 
       - name: Upload Web Artifact
@@ -46,7 +55,7 @@ jobs:
           name: web-release
           path: build/web
 
-  # 2. بناء ملف iOS (يتطلب macOS)
+  # 2. بناء ملف iOS
   build-ios:
     runs-on: macos-latest
     steps:
