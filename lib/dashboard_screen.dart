@@ -178,10 +178,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       strokeWidth: 8,
                       backgroundColor: Theme.of(
                         context,
-                      ).colorScheme.surfaceVariant,
+                      ).colorScheme.surfaceContainerHighest,
                     ),
                     Text(
-                      '${completedTasks}/${_tasks.length}',
+                      '$completedTasks/${_tasks.length}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
