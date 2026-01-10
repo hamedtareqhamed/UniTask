@@ -6,6 +6,14 @@ import 'task_model.dart';
 import 'storage_service.dart';
 import 'course_model.dart';
 
+/// The main Dashboard screen of the application.
+///
+/// Displays:
+/// - Current session digital clock.
+/// - Weekly calendar strip with deadline indicators.
+/// - Overall progress circular indicator and stats.
+/// - List of upcoming deadlines.
+/// - Task adding entry form and task list.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -52,10 +60,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  // Subprogram: Timer Logic
+  // --- Subprograms ---
+
+  /// Starts the digital clock timer, updating every second.
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      // Check if mounted to avoid calling setState after dispose
       if (mounted) {
         setState(() {
           _currentTime = DateFormat('hh:mm:ss a').format(DateTime.now());
@@ -64,7 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Subprogram: Add Task
+  /// Adds a new task based on form input.
+  ///
+  /// Validates input, creates a [Task] object, adds it to the list,
+  /// and persists the changes.
   void _addTask() {
     // Control Structure: If-else for validation
     if (_formKey.currentState!.validate()) {

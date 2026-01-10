@@ -1,127 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
-class Course {
-  String id;
-  String name;
-  String professor;
-  int credits;
-  int colorValue; // Store color as int for JSON serialization
+/// Enum representing the type of assessment.
+enum AssessmentType { quiz, assignment, midterm, finalExam, project, other }
 
-  List<Assessment> assessments;
-  double courseworkWeight;
-  double finalWeight;
-
-  Course({
-    required this.id,
-    required this.name,
-    required this.professor,
-    required this.credits,
-    required this.colorValue,
-    this.assessments = const [],
-    this.courseworkWeight = 60.0,
-    this.finalWeight = 40.0,
-  });
-
-  Color get color => Color(colorValue);
-
-  // Logic: 0.0 to 100.0
-  double get totalGrade {
-    double totalPoints = 0;
-    for (var a in assessments) {
-      if (a.maxScore > 0) {
-        totalPoints += (a.score / a.maxScore) * a.weight;
-      }
-    }
-    return totalPoints;
-  }
-
-  double get courseworkPercentage {
-    double earned = 0;
-    for (var a in assessments.where(
-      (a) => a.category == AssessmentCategory.coursework,
-    )) {
-      if (a.maxScore > 0) {
-        earned += (a.score / a.maxScore) * a.weight;
-      }
-    }
-    return courseworkWeight == 0 ? 0 : (earned / courseworkWeight) * 100;
-  }
-
-  double get finalPercentage {
-    double earned = 0;
-    for (var a in assessments.where(
-      (a) => a.category == AssessmentCategory.finalProject,
-    )) {
-      if (a.maxScore > 0) {
-        earned += (a.score / a.maxScore) * a.weight;
-      }
-    }
-    return finalWeight == 0 ? 0 : (earned / finalWeight) * 100;
-  }
-
-  bool get isPassed {
-    return courseworkPercentage >= 40 && finalPercentage >= 40;
-  }
-
-  Map<String, double> getBreakdown(AssessmentCategory category) {
-    double acquired = 0;
-    double lost = 0;
-    double totalCategoryWeight = category == AssessmentCategory.coursework
-        ? courseworkWeight
-        : finalWeight;
-
-    for (var a in assessments) {
-      if (a.category == category) {
-        double aScore = a.score;
-        double aMax = a.maxScore;
-        if (aMax > 0) {
-          acquired += (aScore / aMax) * a.weight;
-          lost += ((aMax - aScore) / aMax) * a.weight;
-        }
-      }
-    }
-
-    double remaining = totalCategoryWeight - (acquired + lost);
-    if (remaining < 0) remaining = 0;
-
-    return {'acquired': acquired, 'lost': lost, 'remaining': remaining};
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'professor': professor,
-      'credits': credits,
-      'colorValue': colorValue,
-      'assessments': assessments.map((x) => x.toMap()).toList(),
-      'courseworkWeight': courseworkWeight,
-      'finalWeight': finalWeight,
-    };
-  }
-
-  factory Course.fromMap(Map<String, dynamic> map) {
-    return Course(
-      id: map['id'],
-      name: map['name'],
-      professor: map['professor'],
-      credits: map['credits'],
-      colorValue: map['colorValue'],
-      assessments: List<Assessment>.from(
-        (map['assessments'] as List<dynamic>? ?? []).map<Assessment>(
-          (x) => Assessment.fromMap(x),
-        ),
-      ),
-      courseworkWeight: map['courseworkWeight'] ?? 60.0,
-      finalWeight: map['finalWeight'] ?? 40.0,
-    );
-  }
-}
-
-enum AssessmentType { quiz, assignment, project, exam }
-
+/// Enum representing the grading category.
 enum AssessmentCategory { coursework, finalProject }
 
+/// Represents a single assessment (e.g., Quiz, Exam) within a course.
 class Assessment {
   String id;
   String title;
@@ -129,8 +15,7 @@ class Assessment {
   AssessmentCategory category;
   double score;
   double maxScore;
-  double
-  weight; // Percentage weight in total grade (optional for now, or derived)
+  double weight; // Represents Absolute Points
   DateTime? deadline;
 
   Assessment({
@@ -169,6 +54,141 @@ class Assessment {
       deadline: map['deadline'] != null
           ? DateTime.parse(map['deadline'])
           : null,
+    );
+  }
+}
+
+/// Represents a Course within the application.
+class Course {
+  String id;
+  String name;
+  String professor;
+  int credits;
+  int colorValue;
+  double courseworkWeight;
+  double finalWeight;
+  List<Assessment> assessments;
+
+  Course({
+    required this.id,
+    required this.name,
+    required this.professor,
+    required this.credits,
+    required this.colorValue,
+    this.courseworkWeight = 60.0,
+    this.finalWeight = 40.0,
+    List<Assessment>? assessments,
+  }) : assessments = assessments ?? [];
+
+  Color get color => Color(colorValue);
+
+  /// Calculates the total grade based on absolute points earned.
+  ///
+  /// Formula: Sum of ( (score / maxScore) * weight ) for all assessments.
+  double get totalGrade {
+    double totalPoints = 0.0;
+    for (var a in assessments) {
+      if (a.maxScore > 0) {
+        totalPoints += (a.score / a.maxScore) * a.weight;
+      }
+    }
+    return totalPoints;
+  }
+
+  /// Calculates the points earned for the Coursework category.
+  double get courseworkPercentage {
+    double points = 0.0;
+    for (var a in assessments) {
+      if (a.category == AssessmentCategory.coursework && a.maxScore > 0) {
+        points += (a.score / a.maxScore) * a.weight;
+      }
+    }
+    return points;
+  }
+
+  /// Calculates the points earned for the Final/Project category.
+  double get finalPercentage {
+    double points = 0.0;
+    for (var a in assessments) {
+      if (a.category == AssessmentCategory.finalProject && a.maxScore > 0) {
+        points += (a.score / a.maxScore) * a.weight;
+      }
+    }
+    return points;
+  }
+
+  /// Determines if the course is passed (threshold: 40% in each category).
+  ///
+  /// This logic might need adjustment based on specific university rules.
+  /// Currently checks if >= 40% of the possible points in each category are earned.
+  /// Note: This logic assumes 'percentage' getters return Points, so we compare
+  /// against 40% of the Category Weight.
+  bool get isPassed {
+    return courseworkPercentage >= (courseworkWeight * 0.4) &&
+        finalPercentage >= (finalWeight * 0.4);
+  }
+
+  /// Calculates the breakdown of points (Acquired, Lost, Remaining) for a category.
+  Map<String, double> getBreakdown(AssessmentCategory category) {
+    double acquired = 0.0;
+    double lost = 0.0;
+    double totalCategoryPoints = category == AssessmentCategory.coursework
+        ? courseworkWeight
+        : finalWeight;
+
+    for (var a in assessments) {
+      if (a.category == category) {
+        double pointsPotential = a.weight;
+        double pointsEarned = 0.0;
+
+        if (a.maxScore > 0) {
+          pointsEarned = (a.score / a.maxScore) * a.weight;
+          double pointsMissed = pointsPotential - pointsEarned;
+
+          acquired += pointsEarned;
+          // Only count "Lost" if the assessment is actually graded (score entered)
+          // For now, assuming if it's in the list, it's graded.
+          // To be more precise, we might want a 'isGraded' flag.
+          // Here we assume maxScore > 0 implies it's a valid assessment.
+          lost += pointsMissed;
+        }
+      }
+    }
+
+    double remaining = totalCategoryPoints - (acquired + lost);
+    // Ensure remaining doesn't go below zero (due to float precision or extra credit)
+    if (remaining < 0) remaining = 0;
+
+    return {'acquired': acquired, 'lost': lost, 'remaining': remaining};
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'professor': professor,
+      'credits': credits,
+      'colorValue': colorValue,
+      'courseworkWeight': courseworkWeight,
+      'finalWeight': finalWeight,
+      'assessments': assessments.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory Course.fromMap(Map<String, dynamic> map) {
+    return Course(
+      id: map['id'],
+      name: map['name'],
+      professor: map['professor'],
+      credits: map['credits'],
+      colorValue: map['colorValue'],
+      courseworkWeight: (map['courseworkWeight'] ?? 60.0).toDouble(),
+      finalWeight: (map['finalWeight'] ?? 40.0).toDouble(),
+      assessments: List<Assessment>.from(
+        (map['assessments'] as List<dynamic>? ?? []).map<Assessment>(
+          (x) => Assessment.fromMap(x),
+        ),
+      ),
     );
   }
 }
