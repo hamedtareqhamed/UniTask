@@ -1,6 +1,10 @@
 # UniTask - The Ultimate Student Companion
 
-![UniTask Banner](assets/screenshots/dashboard.png)
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" width="30%" />
+
+
+</p>
 
 **UniTask** is a powerful, beautifully designed Flutter application built to help university students manage their academic life with ease. From tracking grades with precision to managing deadlines with visual urgency, UniTask is your personal academic assistant.
 
@@ -11,13 +15,17 @@
 - **Absolute Point Tracking**: Track your grades based on actual points earned, not just confusing percentages.
 - **Visual Breakdown**: See exactly where you stand with our custom circular charts showing points **Acquired**, **Lost**, and **Remaining**.
 
-![Course Details](assets/screenshots/course_detail.png)
+<p align="center">
+  <img src="assets/screenshots/course_detail.png" width="30%" />
+</p>
 
 ### 📅 Smart Academic Calendar
 - **Busy Window Detection**: The calendar automatically highlights "Busy Windows" (5+ deadlines in 5 days) in red, giving you a heads-up on tough weeks.
 - **Deadline Management**: Never miss a due date with clear, color-coded urgency indicators.
 
-![Calendar](assets/screenshots/calendar.png)
+<p align="center">
+  <img src="assets/screenshots/calendar.png" width="30%" />
+</p>
 
 ### 🚀 Productivity Dashboard
 - **Session Timer**: Keep track of your study sessions.
