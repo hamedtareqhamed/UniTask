@@ -256,6 +256,32 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   double.tryParse(maxScoreController.text) ?? 100;
               final newWeight = double.tryParse(weightController.text) ?? 0;
 
+              // Validation: Check total weight limit
+              double currentTotalWeight = 0;
+              for (var a in _course.assessments) {
+                if (a.category == selectedCategory &&
+                    (assessment == null || a.id != assessment.id)) {
+                  currentTotalWeight += a.weight;
+                }
+              }
+
+              double categoryLimit =
+                  selectedCategory == AssessmentCategory.coursework
+                  ? _course.courseworkWeight
+                  : _course.finalWeight;
+
+              if (currentTotalWeight + newWeight > categoryLimit) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Error: Total points cannot exceed $categoryLimit for ${selectedCategory == AssessmentCategory.coursework ? 'Coursework' : 'Final/Project'}',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
               if (assessment == null) {
                 // Add new
                 final newAssessment = Assessment(
@@ -299,6 +325,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Widget _buildOverviewTab() {
+    // Sort assessments: Incomplete (by deadline) first, then Completed
+    final sortedAssessments = List<Assessment>.from(_course.assessments);
+    sortedAssessments.sort((a, b) {
+      if (a.isCompleted && !b.isCompleted) return 1;
+      if (!a.isCompleted && b.isCompleted) return -1;
+      // Both completed or both incomplete
+      if (a.deadline == null && b.deadline == null) return 0;
+      if (a.deadline == null) return 1;
+      if (b.deadline == null) return -1;
+      return a.deadline!.compareTo(b.deadline!);
+    });
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 800;
@@ -325,7 +363,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       _buildAssessmentHeader(),
                       Expanded(
                         child: ListView(
-                          children: _course.assessments
+                          children: sortedAssessments
                               .map(_buildAssessmentCard)
                               .toList(),
                         ),
@@ -346,7 +384,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               _buildSummaryCard(),
               const SizedBox(height: 20),
               _buildAssessmentHeader(),
-              ..._course.assessments.map(_buildAssessmentCard),
+              ...sortedAssessments.map(_buildAssessmentCard),
             ],
           ),
         );
@@ -406,14 +444,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Widget _buildAssessmentCard(Assessment a) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
+      elevation: a.isCompleted ? 0 : 2,
+      color: a.isCompleted
+          ? Theme.of(context).cardColor.withValues(alpha: 0.5)
+          : null,
       child: ListTile(
-        leading: Icon(
-          a.category == AssessmentCategory.coursework
-              ? Icons.assignment
-              : Icons.school,
-          color: Colors.teal,
+        leading: Checkbox(
+          value: a.isCompleted,
+          onChanged: (val) {
+            setState(() {
+              a.isCompleted = val ?? false;
+            });
+            _saveCourse();
+          },
         ),
-        title: Text(a.title),
+        title: Text(
+          a.title,
+          style: TextStyle(
+            decoration: a.isCompleted ? TextDecoration.lineThrough : null,
+            color: a.isCompleted ? Colors.grey : null,
+          ),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -422,7 +473,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               Text(
                 'Due: ${DateFormat('MMM d, h:mm a').format(a.deadline!)}',
                 style: TextStyle(
-                  color: a.deadline!.isBefore(DateTime.now())
+                  color: a.deadline!.isBefore(DateTime.now()) && !a.isCompleted
                       ? Colors.red
                       : Colors.grey,
                   fontSize: 12,
