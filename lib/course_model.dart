@@ -8,25 +8,28 @@ enum AssessmentType { quiz, assignment, midterm, finalExam, project, other }
 enum AssessmentCategory { coursework, finalProject }
 
 /// Represents a single assessment (e.g., Quiz, Exam) within a course.
+/// Represents a single assessment (e.g., Quiz, Exam) within a course.
 class Assessment {
   String id;
   String title;
   AssessmentType type;
   AssessmentCategory category;
-  double score;
+  double? score; // Changed to nullable
   double maxScore;
   double weight; // Represents Absolute Points
   DateTime? deadline;
+  bool isCompleted;
 
   Assessment({
     required this.id,
     required this.title,
     required this.type,
     required this.category,
-    required this.score,
+    this.score, // Optional
     required this.maxScore,
     required this.weight,
     this.deadline,
+    this.isCompleted = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,10 +38,11 @@ class Assessment {
       'title': title,
       'type': type.index,
       'category': category.index,
-      'score': score,
+      'score': score, // Can be null
       'maxScore': maxScore,
       'weight': weight,
       'deadline': deadline?.toIso8601String(),
+      'isCompleted': isCompleted,
     };
   }
 
@@ -48,12 +52,13 @@ class Assessment {
       title: map['title'],
       type: AssessmentType.values[map['type']],
       category: AssessmentCategory.values[map['category']],
-      score: map['score'],
+      score: map['score'], // Can be null
       maxScore: map['maxScore'],
       weight: map['weight'],
       deadline: map['deadline'] != null
           ? DateTime.parse(map['deadline'])
           : null,
+      isCompleted: map['isCompleted'] ?? false,
     );
   }
 }
@@ -88,8 +93,8 @@ class Course {
   double get totalGrade {
     double totalPoints = 0.0;
     for (var a in assessments) {
-      if (a.maxScore > 0) {
-        totalPoints += (a.score / a.maxScore) * a.weight;
+      if (a.score != null && a.maxScore > 0) {
+        totalPoints += (a.score! / a.maxScore) * a.weight;
       }
     }
     return totalPoints;
@@ -99,8 +104,10 @@ class Course {
   double get courseworkPercentage {
     double points = 0.0;
     for (var a in assessments) {
-      if (a.category == AssessmentCategory.coursework && a.maxScore > 0) {
-        points += (a.score / a.maxScore) * a.weight;
+      if (a.category == AssessmentCategory.coursework &&
+          a.score != null &&
+          a.maxScore > 0) {
+        points += (a.score! / a.maxScore) * a.weight;
       }
     }
     return points;
@@ -110,8 +117,10 @@ class Course {
   double get finalPercentage {
     double points = 0.0;
     for (var a in assessments) {
-      if (a.category == AssessmentCategory.finalProject && a.maxScore > 0) {
-        points += (a.score / a.maxScore) * a.weight;
+      if (a.category == AssessmentCategory.finalProject &&
+          a.score != null &&
+          a.maxScore > 0) {
+        points += (a.score! / a.maxScore) * a.weight;
       }
     }
     return points;
@@ -128,7 +137,40 @@ class Course {
         finalPercentage >= (finalWeight * 0.4);
   }
 
-  /// Calculates the breakdown of points (Acquired, Lost, Remaining) for a category.
+  /// Calculates the total potential score (Acquired + Remaining).
+  double get totalPotential {
+    final cw = getBreakdown(AssessmentCategory.coursework);
+    final fp = getBreakdown(AssessmentCategory.finalProject);
+    // Potential = Acquired + Remaining
+    return (cw['acquired']! + cw['pending']!) +
+        (fp['acquired']! + fp['pending']!);
+  }
+
+  /// Determines if it is mathematically impossible to pass.
+  /// Returns true if "Lost" points exceed 60% of the weight in ANY category.
+  bool get isImpossibleToPass {
+    final cw = getBreakdown(AssessmentCategory.coursework);
+    final fp = getBreakdown(AssessmentCategory.finalProject);
+
+    final cwLost = cw['lost']!;
+    final fpLost = fp['lost']!;
+
+    return cwLost > (courseworkWeight * 0.6) || fpLost > (finalWeight * 0.6);
+  }
+
+  /// Checks if the Coursework category is secured (> 40% acquired).
+  bool get isCourseworkSecured {
+    final cw = getBreakdown(AssessmentCategory.coursework);
+    return cw['acquired']! >= (courseworkWeight * 0.4);
+  }
+
+  /// Checks if the Final/Project category is secured (> 40% acquired).
+  bool get isFinalSecured {
+    final fp = getBreakdown(AssessmentCategory.finalProject);
+    return fp['acquired']! >= (finalWeight * 0.4);
+  }
+
+  /// Calculates the breakdown of points (Acquired, Lost, Pending) for a category.
   Map<String, double> getBreakdown(AssessmentCategory category) {
     double acquired = 0.0;
     double lost = 0.0;
@@ -139,27 +181,23 @@ class Course {
     for (var a in assessments) {
       if (a.category == category) {
         double pointsPotential = a.weight;
-        double pointsEarned = 0.0;
 
-        if (a.maxScore > 0) {
-          pointsEarned = (a.score / a.maxScore) * a.weight;
+        // Only count towards acquired/lost if graded (score is not null)
+        if (a.score != null && a.maxScore > 0) {
+          double pointsEarned = (a.score! / a.maxScore) * a.weight;
           double pointsMissed = pointsPotential - pointsEarned;
 
           acquired += pointsEarned;
-          // Only count "Lost" if the assessment is actually graded (score entered)
-          // For now, assuming if it's in the list, it's graded.
-          // To be more precise, we might want a 'isGraded' flag.
-          // Here we assume maxScore > 0 implies it's a valid assessment.
           lost += pointsMissed;
         }
       }
     }
 
-    double remaining = totalCategoryPoints - (acquired + lost);
-    // Ensure remaining doesn't go below zero (due to float precision or extra credit)
-    if (remaining < 0) remaining = 0;
+    double pending = totalCategoryPoints - (acquired + lost);
+    // Ensure pending doesn't go below zero
+    if (pending < 0) pending = 0;
 
-    return {'acquired': acquired, 'lost': lost, 'remaining': remaining};
+    return {'acquired': acquired, 'lost': lost, 'pending': pending};
   }
 
   Map<String, dynamic> toMap() {

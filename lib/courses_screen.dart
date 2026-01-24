@@ -196,60 +196,68 @@ class _CoursesScreenState extends State<CoursesScreen> {
       appBar: AppBar(title: const Text('Courses')),
       body: _courses.isEmpty
           ? const Center(child: Text('No courses added yet.'))
-          : ListView.builder(
-              itemCount: _courses.length,
+          : GridView.builder(
               padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 600,
+                childAspectRatio: 3, // Adjust based on card content
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 120, // Fixed height for cards
+              ),
+              itemCount: _courses.length,
               itemBuilder: (context, index) {
                 final course = _courses[index];
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
                   elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: course.color, width: 2),
                   ),
-                  child: ListTile(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CourseDetailScreen(
-                            course: course,
-                            onCourseUpdated: _loadCourses,
+                  child: Center(
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CourseDetailScreen(
+                              course: course,
+                              onCourseUpdated: _loadCourses,
+                            ),
                           ),
-                        ),
-                      ).then((_) => _loadCourses());
-                    },
-                    leading: CircleAvatar(
-                      backgroundColor: course.color.withValues(alpha: 0.2),
-                      child: Text(
-                        course.credits.toString(),
-                        style: TextStyle(
-                          color: course.color,
-                          fontWeight: FontWeight.bold,
+                        ).then((_) => _loadCourses());
+                      },
+                      leading: CircleAvatar(
+                        backgroundColor: course.color.withValues(alpha: 0.2),
+                        child: Text(
+                          course.credits.toString(),
+                          style: TextStyle(
+                            color: course.color,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    title: Text(
-                      course.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text('Prof. ${course.professor}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _showCourseDialog(course: course),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
+                      title: Text(
+                        course.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text('Prof. ${course.professor}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showCourseDialog(course: course),
                           ),
-                          onPressed: () => _deleteCourse(course),
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            onPressed: () => _deleteCourse(course),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

@@ -115,20 +115,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     _loadNotes();
   }
 
-  void _addAssessment() {
-    // Existing _addAssessment code...
-    final titleController = TextEditingController();
-    final scoreController = TextEditingController();
-    final maxScoreController = TextEditingController();
-    final weightController = TextEditingController();
-    AssessmentType selectedType = AssessmentType.quiz;
-    AssessmentCategory selectedCategory = AssessmentCategory.coursework;
-    DateTime? selectedDeadline;
+  void _showAssessmentDialog({Assessment? assessment}) {
+    final titleController = TextEditingController(text: assessment?.title);
+    final scoreController = TextEditingController(
+      text: assessment?.score?.toString() ?? '',
+    );
+    final maxScoreController = TextEditingController(
+      text: assessment?.maxScore.toString(),
+    );
+    final weightController = TextEditingController(
+      text: assessment?.weight.toString(),
+    );
+
+    AssessmentType selectedType = assessment?.type ?? AssessmentType.quiz;
+    AssessmentCategory selectedCategory =
+        assessment?.category ?? AssessmentCategory.coursework;
+    DateTime? selectedDeadline = assessment?.deadline;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Assessment'),
+        title: Text(assessment == null ? 'Add Assessment' : 'Edit Assessment'),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
             return SingleChildScrollView(
@@ -174,7 +181,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   TextField(
                     controller: scoreController,
                     decoration: const InputDecoration(
-                      labelText: 'Score Acquired',
+                      labelText: 'Score Acquired (Leave empty if ungraded)',
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -203,7 +210,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         onPressed: () async {
                           final date = await showDatePicker(
                             context: context,
-                            initialDate: DateTime.now(),
+                            initialDate: selectedDeadline ?? DateTime.now(),
                             firstDate: DateTime.now(),
                             lastDate: DateTime(2101),
                           );
@@ -241,21 +248,43 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              final newAssessment = Assessment(
-                id: DateTime.now().toString(),
-                title: titleController.text,
-                type: selectedType,
-                category: selectedCategory,
-                score: double.tryParse(scoreController.text) ?? 0,
-                maxScore: double.tryParse(maxScoreController.text) ?? 100,
-                weight: double.tryParse(weightController.text) ?? 0,
-                deadline: selectedDeadline,
-              );
-              _course.assessments.add(newAssessment);
+              final scoreText = scoreController.text.trim();
+              final newScore = scoreText.isEmpty
+                  ? null
+                  : double.tryParse(scoreText);
+              final newMaxScore =
+                  double.tryParse(maxScoreController.text) ?? 100;
+              final newWeight = double.tryParse(weightController.text) ?? 0;
+
+              if (assessment == null) {
+                // Add new
+                final newAssessment = Assessment(
+                  id: DateTime.now().toString(),
+                  title: titleController.text,
+                  type: selectedType,
+                  category: selectedCategory,
+                  score: newScore,
+                  maxScore: newMaxScore,
+                  weight: newWeight,
+                  deadline: selectedDeadline,
+                );
+                _course.assessments.add(newAssessment);
+              } else {
+                // Edit existing
+                setState(() {
+                  assessment.title = titleController.text;
+                  assessment.type = selectedType;
+                  assessment.category = selectedCategory;
+                  assessment.score = newScore;
+                  assessment.maxScore = newMaxScore;
+                  assessment.weight = newWeight;
+                  assessment.deadline = selectedDeadline;
+                });
+              }
               _saveCourse();
               Navigator.pop(context);
             },
-            child: const Text('Add'),
+            child: Text(assessment == null ? 'Add' : 'Save'),
           ),
         ],
       ),
@@ -270,102 +299,159 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          // Summary Card
-          Card(
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Text(
-                    'Total Grade',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  Text(
-                    '${_course.totalGrade.toStringAsFixed(1)}%',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: _course.isPassed ? Colors.green : Colors.red,
-                    ),
-                  ),
-                  Text(
-                    _course.isPassed ? 'PASSED' : 'FAILED',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(),
-                  _buildChartRow(),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
 
-          // Assessment List
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Assessments',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              IconButton(
-                onPressed: _addAssessment,
-                icon: const Icon(
-                  Icons.add_circle,
-                  color: Colors.teal,
-                  size: 30,
+        if (isWide) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left Side: Summary
+                Expanded(
+                  flex: 4,
+                  child: SingleChildScrollView(
+                    child: Column(children: [_buildSummaryCard()]),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          ..._course.assessments.map(
-            (a) => Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ListTile(
-                leading: Icon(
-                  a.category == AssessmentCategory.coursework
-                      ? Icons.assignment
-                      : Icons.school,
-                  color: Colors.teal,
-                ),
-                title: Text(a.title),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${a.type.name.toUpperCase()} • Points: ${a.weight}'),
-                    if (a.deadline != null)
-                      Text(
-                        'Due: ${DateFormat('MMM d, h:mm a').format(a.deadline!)}',
-                        style: TextStyle(
-                          color: a.deadline!.isBefore(DateTime.now())
-                              ? Colors.red
-                              : Colors.grey,
-                          fontSize: 12,
+                const SizedBox(width: 20),
+                // Right Side: Assessments
+                Expanded(
+                  flex: 6,
+                  child: Column(
+                    children: [
+                      _buildAssessmentHeader(),
+                      Expanded(
+                        child: ListView(
+                          children: _course.assessments
+                              .map(_buildAssessmentCard)
+                              .toList(),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${a.score}/${a.maxScore}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      onPressed: () => _deleteAssessment(a),
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                    ),
-                  ],
-                ),
+              ],
+            ),
+          );
+        }
+
+        // Mobile Layout
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildSummaryCard(),
+              const SizedBox(height: 20),
+              _buildAssessmentHeader(),
+              ..._course.assessments.map(_buildAssessmentCard),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text('Total Grade', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              '${_course.totalGrade.toStringAsFixed(1)}%',
+              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: _course.isPassed
+                    ? Colors.green
+                    : (_course.isImpossibleToPass ? Colors.red : Colors.orange),
               ),
             ),
-          ),
-        ],
+            Text(
+              _course.isPassed
+                  ? 'PASSED'
+                  : (_course.isImpossibleToPass ? 'FAILED' : 'IN PROGRESS'),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: _course.isPassed
+                    ? Colors.green
+                    : (_course.isImpossibleToPass ? Colors.red : Colors.orange),
+              ),
+            ),
+            const Divider(),
+            _buildChartRow(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssessmentHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('Assessments', style: Theme.of(context).textTheme.headlineSmall),
+        IconButton(
+          onPressed: () => _showAssessmentDialog(),
+          icon: const Icon(Icons.add_circle, color: Colors.teal, size: 30),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssessmentCard(Assessment a) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: Icon(
+          a.category == AssessmentCategory.coursework
+              ? Icons.assignment
+              : Icons.school,
+          color: Colors.teal,
+        ),
+        title: Text(a.title),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${a.type.name.toUpperCase()} • Points: ${a.weight}'),
+            if (a.deadline != null)
+              Text(
+                'Due: ${DateFormat('MMM d, h:mm a').format(a.deadline!)}',
+                style: TextStyle(
+                  color: a.deadline!.isBefore(DateTime.now())
+                      ? Colors.red
+                      : Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              a.score == null
+                  ? '- / ${a.maxScore}'
+                  : '${a.score}/${a.maxScore}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: a.score == null ? Colors.grey : null,
+              ),
+            ),
+            IconButton(
+              onPressed: () => _showAssessmentDialog(assessment: a),
+              icon: const Icon(Icons.edit, color: Colors.blue),
+            ),
+            IconButton(
+              onPressed: () => _deleteAssessment(a),
+              icon: const Icon(Icons.delete, color: Colors.red),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -469,15 +555,17 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           title: 'Coursework',
           acquired: cwBreakdown['acquired']!,
           lost: cwBreakdown['lost']!,
-          remaining: cwBreakdown['remaining']!,
+          pending: cwBreakdown['pending']!,
           total: _course.courseworkWeight,
+          isSecured: _course.isCourseworkSecured,
         ),
         ScoreDistributionChart(
           title: 'Final/Project',
           acquired: finalBreakdown['acquired']!,
           lost: finalBreakdown['lost']!,
-          remaining: finalBreakdown['remaining']!,
+          pending: finalBreakdown['pending']!,
           total: _course.finalWeight,
+          isSecured: _course.isFinalSecured,
         ),
       ],
     );
@@ -507,23 +595,48 @@ class ScoreDistributionChart extends StatelessWidget {
   final String title;
   final double acquired;
   final double lost;
-  final double remaining;
+  final double pending;
   final double total;
+  final bool isSecured;
 
   const ScoreDistributionChart({
     super.key,
     required this.title,
     required this.acquired,
     required this.lost,
-    required this.remaining,
+    required this.pending,
     required this.total,
+    required this.isSecured,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (isSecured) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'SECURED',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         const SizedBox(height: 10),
         SizedBox(
           width: 120,
@@ -532,7 +645,7 @@ class ScoreDistributionChart extends StatelessWidget {
             painter: _ScoreDistributionPainter(
               acquired: acquired,
               lost: lost,
-              remaining: remaining,
+              pending: pending,
               total: total,
             ),
             child: Center(
@@ -545,6 +658,10 @@ class ScoreDistributionChart extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
+                  ),
+                  Text(
+                    'Pending: ${pending.toStringAsFixed(1)}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
                   ),
                   Text(
                     'Lost: ${lost.toStringAsFixed(1)}',
@@ -563,13 +680,13 @@ class ScoreDistributionChart extends StatelessWidget {
 class _ScoreDistributionPainter extends CustomPainter {
   final double acquired;
   final double lost;
-  final double remaining;
+  final double pending;
   final double total;
 
   _ScoreDistributionPainter({
     required this.acquired,
     required this.lost,
-    required this.remaining,
+    required this.pending,
     required this.total,
   });
 
@@ -590,7 +707,7 @@ class _ScoreDistributionPainter extends CustomPainter {
 
     double startAngle = -3.14159 / 2; // Start from top
 
-    // Draw Background (Grey/Remaining)
+    // Draw Background (Grey/Pending)
     paint.color = Colors.grey.withValues(alpha: 0.2);
     canvas.drawArc(rect, 0, 2 * 3.14159, false, paint);
 

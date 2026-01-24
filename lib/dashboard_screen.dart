@@ -25,10 +25,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Names & Bindings
   List<Task> _tasks = []; // Changed to non-final to allow reassignment
   List<Course> _courses = [];
-  String? _selectedCourseId;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _taskController = TextEditingController();
-  final TextEditingController _scoreController = TextEditingController();
 
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -56,7 +54,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void dispose() {
     _timer?.cancel();
     _taskController.dispose();
-    _scoreController.dispose();
     super.dispose();
   }
 
@@ -73,67 +70,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  /// Adds a new task based on form input.
-  ///
-  /// Validates input, creates a [Task] object, adds it to the list,
-  /// and persists the changes.
-  void _addTask() {
-    // Control Structure: If-else for validation
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        String name = _taskController.text;
-        // Expression: parsing double
-        double score = double.tryParse(_scoreController.text) ?? 0.0;
-
-        _tasks.add(Task(name: name, score: score, courseId: _selectedCourseId));
-        _taskController.clear();
-        _scoreController.clear();
-        _selectedCourseId = null;
-      });
-      StorageService.saveTasks(_tasks); // Save changes
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Task Added Successfully!')));
-    }
-  }
-
-  // Subprogram: Calculate Progress
-  double _calculateProgress(int total, int completed) {
-    if (total == 0) return 0.0;
-    // Expression & Assignment: Progress calculation
-    return completed / total;
-  }
-
-  void _toggleTaskCompletion(Task task) {
-    setState(() {
-      task.isCompleted = !task.isCompleted;
-    });
-    StorageService.saveTasks(_tasks); // Save changes
-  }
-
-  List<Map<String, dynamic>> _getUpcomingAssessments() {
-    List<Map<String, dynamic>> upcoming = [];
-    final now = DateTime.now();
-    for (var course in _courses) {
-      for (var assessment in course.assessments) {
-        if (assessment.deadline != null && assessment.deadline!.isAfter(now)) {
-          upcoming.add({'course': course, 'assessment': assessment});
-        }
-      }
-    }
-    upcoming.sort((a, b) {
-      DateTime d1 = (a['assessment'] as Assessment).deadline!;
-      DateTime d2 = (b['assessment'] as Assessment).deadline!;
-      return d1.compareTo(d2);
-    });
-    return upcoming.take(5).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Logic for progress
-    int completedTasks = _tasks.where((t) => t.isCompleted).length;
-    double progress = _calculateProgress(_tasks.length, completedTasks);
+    // 1. Combine Assessments and Tasks into a single list of display items
+    final allItems = <_DashboardItem>[];
+
+    // Add Course Assessments
+    for (var course in _courses) {
+      for (var assessment in course.assessments) {
+        allItems.add(_DashboardItem.fromAssessment(assessment, course));
+      }
+    }
+
+    // Add Non-Course Tasks
+    for (var task in _tasks) {
+      allItems.add(_DashboardItem.fromTask(task));
+    }
+
+    // 2. Separate into Incomplete and Completed
+    final incompleteItems = allItems.where((i) => !i.isCompleted).toList();
+    final completedItems = allItems.where((i) => i.isCompleted).toList();
+
+    // 3. Sort Incomplete by Deadline (Ascending - Sooner first)
+    // Items without deadline go to the end
+    incompleteItems.sort((a, b) {
+      if (a.deadline == null && b.deadline == null) return 0;
+      if (a.deadline == null) return 1;
+      if (b.deadline == null) return -1;
+      return a.deadline!.compareTo(b.deadline!);
+    });
+
+    // 4. Calculate Overall Progress
+    final totalItems = allItems.length;
+    final completedCount = completedItems.length;
+    final progress = totalItems == 0 ? 0.0 : completedCount / totalItems;
 
     return Scaffold(
       appBar: AppBar(
@@ -185,7 +155,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontFamily: 'Courier', // Or Monospace
+                      fontFamily: 'Courier',
                     ),
                   ),
                 ],
@@ -255,15 +225,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   markerBuilder: (context, day, events) {
-                    bool hasDeadline = false;
-                    for (var course in _courses) {
-                      if (course.assessments.any(
-                        (a) => a.deadline != null && isSameDay(a.deadline, day),
-                      )) {
-                        hasDeadline = true;
-                        break;
-                      }
-                    }
+                    bool hasDeadline = allItems.any(
+                      (i) => i.deadline != null && isSameDay(i.deadline, day),
+                    );
 
                     if (hasDeadline) {
                       return Positioned(
@@ -315,109 +279,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ).colorScheme.surfaceContainerHighest,
                     ),
                     Text(
-                      '$completedTasks/${_tasks.length}',
+                      '$completedCount/$totalItems',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ],
             ),
-            // Upcoming Deadlines Section
-            if (_courses.any(
-              (c) => c.assessments.any(
-                (a) =>
-                    a.deadline != null && a.deadline!.isAfter(DateTime.now()),
-              ),
-            )) ...[
-              const Divider(height: 40),
-              Text(
-                'Upcoming Deadlines',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 10),
-              ..._getUpcomingAssessments().map((item) {
-                final assessment = item['assessment'] as Assessment;
-                final course = item['course'] as Course;
-                final deadline = assessment.deadline!;
-                final daysLeft = deadline.difference(DateTime.now()).inDays;
-                Color statusColor;
-                if (daysLeft < 1) {
-                  statusColor = Colors.red;
-                } else if (daysLeft < 3) {
-                  statusColor = Colors.orange;
-                } else {
-                  statusColor = Colors.green;
-                }
+            const Divider(height: 40),
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: course.color.withValues(alpha: 0.2),
-                      child: Icon(
-                        assessment.category == AssessmentCategory.coursework
-                            ? Icons.assignment
-                            : Icons.school,
-                        color: course.color,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(assessment.title),
-                    subtitle: Text(
-                      '${course.name} • ${DateFormat('MMM d').format(deadline)}',
-                    ),
-                    trailing: Chip(
-                      label: Text(
-                        daysLeft == 0
-                            ? 'Today'
-                            : daysLeft == 1
-                            ? 'Tomorrow'
-                            : 'in $daysLeft days',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                      backgroundColor: statusColor,
-                      padding: EdgeInsets.zero,
-                    ),
+            // Combined Task List
+            if (incompleteItems.isEmpty && completedItems.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No tasks or assessments yet.'),
+              )
+            else ...[
+              // Incomplete Items
+              if (incompleteItems.isNotEmpty) ...[
+                Text(
+                  'To Do',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
                   ),
-                );
-              }),
+                ),
+                const SizedBox(height: 10),
+                ...incompleteItems.map((item) => _buildTaskItem(item)),
+              ],
+
+              // Completed Items
+              if (completedItems.isNotEmpty) ...[
+                if (incompleteItems.isNotEmpty) const SizedBox(height: 20),
+                Text(
+                  'Completed',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...completedItems.map((item) => _buildTaskItem(item)),
+              ],
             ],
 
             const Divider(height: 40),
 
-            // Form to Add Task
+            // Add Non-Course Task Form
             Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Add New Task',
+                    'Add Non-Course Task',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 10),
-                  if (_courses.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10.0),
-                      child: DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Select Course (Optional)',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: _selectedCourseId,
-                        items: _courses.map((course) {
-                          return DropdownMenuItem(
-                            value: course.id,
-                            child: Text(course.name),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCourseId = value;
-                          });
-                        },
-                      ),
-                    ),
                   Row(
                     children: [
                       Expanded(
@@ -437,29 +355,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Expanded(
-                        flex: 1,
-                        child: TextFormField(
-                          controller: _scoreController,
-                          decoration: const InputDecoration(
-                            labelText: 'Grade',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Required';
+                      IconButton(
+                        onPressed: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                          );
+                          if (date != null) {
+                            if (!context.mounted) return;
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (time != null) {
+                              setState(() {
+                                // Store selected deadline in a temporary variable or controller?
+                                // For simplicity, let's use a class member or helper
+                                _tempSelectedDeadline = DateTime(
+                                  date.year,
+                                  date.month,
+                                  date.day,
+                                  time.hour,
+                                  time.minute,
+                                );
+                              });
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Invalid';
-                            }
-                            return null;
-                          },
+                          }
+                        },
+                        icon: Icon(
+                          Icons.calendar_today,
+                          color: _tempSelectedDeadline != null
+                              ? Colors.cyanAccent
+                              : Colors.grey,
                         ),
+                        tooltip: _tempSelectedDeadline != null
+                            ? DateFormat(
+                                'MMM d, h:mm a',
+                              ).format(_tempSelectedDeadline!)
+                            : 'Set Deadline',
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton(
-                        onPressed: _addTask,
+                        onPressed: _addNonCourseTask,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
@@ -467,75 +406,217 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
+                  if (_tempSelectedDeadline != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        'Due: ${DateFormat('MMM d, h:mm a').format(_tempSelectedDeadline!)}',
+                        style: const TextStyle(
+                          color: Colors.cyanAccent,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // DataTable
-            if (_tasks.isNotEmpty)
-              Card(
-                elevation: 2,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: DataTable(
-                    columns: const <DataColumn>[
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Task')),
-                      DataColumn(label: Text('Course')),
-                      DataColumn(label: Text('Grade')),
-                      DataColumn(label: Text('Action')),
-                    ],
-                    // Control Structure: Using map() to generate rows
-                    rows: _tasks.map((task) {
-                      final courseName = _courses
-                          .firstWhere(
-                            (c) => c.id == task.courseId,
-                            orElse: () => Course(
-                              id: '',
-                              name: '-',
-                              professor: '',
-                              credits: 0,
-                              colorValue: 0,
-                            ),
-                          )
-                          .name;
-                      return DataRow(
-                        cells: <DataCell>[
-                          DataCell(
-                            Icon(
-                              task.isCompleted
-                                  ? Icons.check_circle
-                                  : Icons.circle_outlined,
-                              color: task.isCompleted
-                                  ? Colors.green
-                                  : Colors.grey,
-                            ),
-                          ),
-                          DataCell(Text(task.name)),
-                          DataCell(Text(courseName == '-' ? '' : courseName)),
-                          DataCell(Text(task.score.toString())),
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.done),
-                              onPressed: () => _toggleTaskCompletion(task),
-                              tooltip: 'Mark as Completed',
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              )
-            else
-              const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: Center(child: Text('No tasks added yet.')),
-              ),
           ],
         ),
       ),
+    );
+  }
+
+  // Temporary state for the date picker
+  DateTime? _tempSelectedDeadline;
+
+  void _addNonCourseTask() {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _tasks.add(
+          Task(name: _taskController.text, deadline: _tempSelectedDeadline),
+        );
+        _taskController.clear();
+        _tempSelectedDeadline = null;
+      });
+      StorageService.saveTasks(_tasks);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Personal Task Added!')));
+    }
+  }
+
+  Widget _buildTaskItem(_DashboardItem item) {
+    final now = DateTime.now();
+    bool isUrgent = false;
+    if (!item.isCompleted && item.deadline != null) {
+      final diff = item.deadline!.difference(now);
+      if (diff.inHours < 24 && diff.inHours >= 0) {
+        isUrgent = true;
+      }
+    }
+
+    Widget card = Card(
+      elevation: 2,
+      color: item.isCompleted
+          ? Theme.of(context).cardColor.withValues(alpha: 0.5)
+          : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isUrgent
+            ? const BorderSide(color: Colors.redAccent, width: 2)
+            : BorderSide.none,
+      ),
+      child: ListTile(
+        leading: Checkbox(
+          value: item.isCompleted,
+          onChanged: (val) {
+            _toggleItemCompletion(item);
+          },
+        ),
+        title: Text(
+          item.title,
+          style: TextStyle(
+            decoration: item.isCompleted ? TextDecoration.lineThrough : null,
+            color: item.isCompleted ? Colors.grey : null,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.subtitle),
+            if (item.deadline != null)
+              Text(
+                'Due: ${DateFormat('MMM d, h:mm a').format(item.deadline!)}',
+                style: TextStyle(
+                  color: isUrgent ? Colors.redAccent : Colors.grey,
+                  fontSize: 12,
+                  fontWeight: isUrgent ? FontWeight.bold : null,
+                ),
+              ),
+          ],
+        ),
+        trailing: isUrgent
+            ? const _GlowingWarningIcon() // Animation Widget
+            : null,
+      ),
+    );
+
+    return Padding(padding: const EdgeInsets.only(bottom: 8.0), child: card);
+  }
+
+  void _toggleItemCompletion(_DashboardItem item) {
+    setState(() {
+      item.internalToggle();
+    });
+
+    // We need to save the source
+    if (item.sourceType == _SourceType.assessment) {
+      StorageService.saveCourses(_courses);
+    } else {
+      StorageService.saveTasks(_tasks);
+    }
+  }
+}
+
+// --- Helper Models & Widgets ---
+
+enum _SourceType { assessment, task }
+
+class _DashboardItem {
+  final String id;
+  final String title;
+  final String subtitle;
+  final DateTime? deadline;
+  final _SourceType sourceType;
+
+  // Mutable references to the original object to toggle state
+  final Function() internalToggle;
+  final bool Function() getCompleted;
+
+  _DashboardItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    this.deadline,
+    required this.sourceType,
+    required this.internalToggle,
+    required this.getCompleted,
+  });
+
+  bool get isCompleted => getCompleted();
+
+  factory _DashboardItem.fromAssessment(Assessment a, Course c) {
+    return _DashboardItem(
+      id: a.id,
+      title: a.title,
+      subtitle: '${c.name} (${a.type.name.toUpperCase()})',
+      deadline: a.deadline,
+      sourceType: _SourceType.assessment,
+      getCompleted: () => a.isCompleted,
+      internalToggle: () => a.isCompleted = !a.isCompleted,
+    );
+  }
+
+  factory _DashboardItem.fromTask(Task t) {
+    return _DashboardItem(
+      id: t.hashCode.toString(),
+      title: t.name,
+      subtitle: 'Personal Task',
+      deadline: t.deadline,
+      sourceType: _SourceType.task,
+      getCompleted: () => t.isCompleted,
+      internalToggle: () => t.isCompleted = !t.isCompleted,
+    );
+  }
+}
+
+class _GlowingWarningIcon extends StatefulWidget {
+  const _GlowingWarningIcon();
+
+  @override
+  State<_GlowingWarningIcon> createState() => _GlowingWarningIconState();
+}
+
+class _GlowingWarningIconState extends State<_GlowingWarningIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.5, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withValues(alpha: _animation.value),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+        );
+      },
     );
   }
 }
