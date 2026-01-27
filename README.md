@@ -1,69 +1,104 @@
 # UniTask - The Ultimate Student Companion
+**TPL6213 - Programming Language Concept** | Group Project Sample Application
 
 <p align="center">
-  <img src="assets/screenshots/dashboard.png" width="30%" />
-
-
+  <img src="assets/screenshots/dashboard.png" width="30%" alt="Dashboard Screenshot" />
+  <img src="assets/screenshots/calendar.png" width="30%" alt="Calendar Screenshot" />
+  <img src="assets/screenshots/course_detail.png" width="30%" alt="Course Detail Screenshot" />
 </p>
 
-**UniTask** is a powerful, beautifully designed Flutter application built to help university students manage their academic life with ease. From tracking grades with precision to managing deadlines with visual urgency, UniTask is your personal academic assistant.
+---
 
-## ✨ Features
+## 👥 Group Members
 
-### 📊 Advanced Grading System
-- **Customizable Weights**: Set your Coursework vs. Final Project weights (e.g., 60/40) per course.
-- **Absolute Point Tracking**: Track your grades based on actual points earned, not just confusing percentages.
-- **Visual Breakdown**: See exactly where you stand with our custom circular charts showing points **Acquired**, **Lost**, and **Remaining**.
 
-<p align="center">
-  <img src="assets/screenshots/course_detail.png" width="30%" />
-</p>
+| No. | Student Name | Student ID |
+| :--- | :--- | :--- |
+| 1. | [Hamed Albazeli] | [243UT246MV] |
+| 2. | [Student Name 2] | [Student ID 2] |
+| 3. | [Student Name 3] | [Student ID 3] |
+| 4. | [Student Name 4] | [Student ID 4] |
 
-### 📅 Smart Academic Calendar
-- **Busy Window Detection**: The calendar automatically highlights "Busy Windows" (5+ deadlines in 5 days) in red, giving you a heads-up on tough weeks.
-- **Deadline Management**: Never miss a due date with clear, color-coded urgency indicators.
+---
 
-<p align="center">
-  <img src="assets/screenshots/calendar.png" width="30%" />
-</p>
+## 📖 Project Overview
 
-### 🚀 Productivity Dashboard
-- **Session Timer**: Keep track of your study sessions.
-- **Visual Progress**: Track your overall task completion and academic progress at a glance.
-- **Quick Actions**: Add tasks and assessments in seconds.
+This project is submitted as a milestone-based group assignment for **TPL6213 - Programming Language Concept**. Our group selected **Dart** as the programming language and **Flutter** as the framework to demonstrate specific language capabilities and system functionalities.
 
-## 🛠️ Installation
+**UniTask** serves as the **Sample Application** for our research, designed to analyze and practically demonstrate:
+*   **Names and Bindings**: Variable scoping, lifetime management in stateful widgets.
+*   **Expressions and Assignment**: Dart's optimized assignment operators and expression evaluation.
+*   **Control Structures**: Asynchronous control flow (`Future`, `await`), loops for widget rendering, and conditional UI building.
+*   **Subprograms**: Modular function design, helper methods, and widget composition.
 
-1.  **Clone the repository**:
+---
+
+## 🎯 System Functionalities Evaluated
+
+Per the project guidelines for Dart/Flutter, this application implements the following core features:
+
+### 1. User Interface Controls & Data Tables
+*   **Dashboard**: A comprehensive view combining a digital clock, weekly calendar strip, and task lists.
+*   **Course Management**: Custom data tables and list views to manage courses and assessments.
+*   **Input Forms**: Validated text fields and date pickers for adding tasks (Demonstrates *Regular Expression* usage in validation).
+
+### 2. Calendar & Time Management
+*   **Smart Calendar**: Integrated `TableCalendar` with custom builders to mark deadlines.
+*   **Busy Window Detection**: Logic to highlight days with high workload (demonstrating complex *Control Structures*).
+*   **Timer Control**: A real-time digital clock session timer implemented using Dart's `Timer.periodic`.
+
+### 3. Data Persistence & Error Handling
+*   **Local Storage**: Implements `shared_preferences` to persist user data across sessions.
+*   **Error Handling**: Robust `try-catch` blocks in `StorageService` to manage data corruption or missing files safely.
+
+### 4. Progress Visualization
+*   **Circular Indicators**: Visual representation of "Acquired", "Lost", and "Remaining" grade points.
+*   **Weight Calculation**: Dynamic calculation of grades based on user-defined weights (Coursework vs. Final).
+
+---
+
+
+
+## 🚀 Installation & Running
+
+To run this sample application for demonstration:
+
+1.  **Clone the Repository**
     ```bash
     git clone https://github.com/yourusername/unitask.git
     cd unitask
     ```
 
-2.  **Install dependencies**:
+2.  **Install Dependencies**
     ```bash
     flutter pub get
     ```
 
-3.  **Run the app**:
+3.  **Run on Chrome (Web)**
+    ```bash
+    flutter run -d chrome
+    ```
+    *Note: The web build has been optimized for mobile-view simulation.*
+
+4.  **Run on Mobile (Android/iOS)**
     ```bash
     flutter run
     ```
 
-## 📱 Usage
+---
 
-1.  **Add Courses**: Go to the "Courses" tab and add your subjects. Set the grading weights (e.g., 60 points for Coursework, 40 for Final).
-2.  **Add Assessments**: Inside a course, add your Quizzes, Midterms, and Assignments. Enter the max score and the points they are worth.
-3.  **Track Deadlines**: Set due dates for your assessments. They will appear on your Dashboard and Calendar.
-4.  **Monitor Progress**: Watch your "Acquired" (Green) ring grow as you ace your exams!
+## 📂 Project Structure
 
-## 💻 Technologies
-
--   **Flutter** (Dart)
--   **TableCalendar**
--   **Intl**
--   **Shared_Preferences** (Local Storage)
+```
+lib/
+├── main.dart               # Entry point & Theme configuration
+├── dashboard_screen.dart   # Main logic (Timer, Calendar, Task List)
+├── courses_screen.dart     # Course management UI
+├── course_detail_screen.dart # Grade calculation & Data visualization
+├── storage_service.dart    # Data persistence (Subprograms example)
+└── models/                 # Data models (Names & Bindings example)
+```
 
 ---
 
-Built with ❤️ for Students.
+Built with ❤️ by **Powe performers Team** for TPL6213.
