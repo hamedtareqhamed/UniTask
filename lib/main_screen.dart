@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import 'courses_screen.dart';
 import 'calendar_screen.dart';
+import 'weekly_schedule_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,6 +17,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const CoursesScreen(),
+    const WeeklyScheduleScreen(),
     const CalendarScreen(),
   ];
 
@@ -44,6 +46,11 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Courses',
           ),
           NavigationDestination(
+            icon: Icon(Icons.table_chart_outlined),
+            selectedIcon: Icon(Icons.table_chart),
+            label: 'Schedule',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Calendar',
@@ -53,3 +60,5 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
+
+

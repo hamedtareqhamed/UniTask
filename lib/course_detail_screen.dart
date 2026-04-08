@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'course_model.dart';
 import 'storage_service.dart';
 import 'note_model.dart';
+import 'gpa_utils.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final Course course;
@@ -409,18 +410,45 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     : (_course.isImpossibleToPass ? Colors.red : Colors.orange),
               ),
             ),
-            Text(
-              _course.isPassed
-                  ? 'PASSED'
-                  : (_course.isImpossibleToPass ? 'FAILED' : 'IN PROGRESS'),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _course.isPassed
-                    ? Colors.green
-                    : (_course.isImpossibleToPass ? Colors.red : Colors.orange),
-              ),
-            ),
-            const Divider(),
+            const SizedBox(height: 12),
+            if (!_course.isPassFail) ...[
+              Builder(builder: (context) {
+                final gradeInfo = GPAUtils.getGradeInfo(_course.totalGrade);
+                final maxGradeInfo = GPAUtils.getGradeInfo(_course.totalPotential);
+                return Column(
+                  children: [
+                    Text(
+                      '${gradeInfo['letter']} (${gradeInfo['points'].toStringAsFixed(2)} / 4.0)',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: _course.isPassed ? Colors.cyanAccent : Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.cyanAccent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.analytics_outlined, size: 16, color: Colors.cyanAccent),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Potential: ${gradeInfo['letter']} → ${maxGradeInfo['letter']}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.cyanAccent, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ],
+            const Divider(height: 24),
             _buildChartRow(),
           ],
         ),
