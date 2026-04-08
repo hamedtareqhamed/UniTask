@@ -1,104 +1,70 @@
-# UniTask - The Ultimate Student Companion
-**TPL6213 - Programming Language Concept** | Group Project Sample Application
+<div align="center">
+  <img src="https://raw.githubusercontent.com/hamedtareqhamed/UniTask/main/unitask_logo_2.png" alt="UniTask Logo" width="150" height="auto" />
+  <h1>UniTask</h1>
+  <p><strong>Your Ultimate University Companion App</strong></p>
+  
+  [![Flutter](https://img.shields.io/badge/Made_with-Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/)
+  [![Firebase](https://img.shields.io/badge/Powered_by-Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+  [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)]()
+</div>
 
-<p align="center">
-  <img src="assets/screenshots/dashboard.png" width="30%" alt="Dashboard Screenshot" />
-  <img src="assets/screenshots/calendar.png" width="30%" alt="Calendar Screenshot" />
-  <img src="assets/screenshots/course_detail.png" width="30%" alt="Course Detail Screenshot" />
-</p>
+<hr />
 
----
+## 📖 About The Project
 
-## 👥 Group Members
+**UniTask** is a comprehensive academic tracking and management system designed to make university life seamless. Built from the ground up with a cross-platform architecture, it allows students to track their coursework, predict their GPA, maintain weekly schedules, and sync all their data securely to the cloud.
 
+### ✨ Key Features
 
-| No. | Student Name | Student ID |
-| :--- | :--- | :--- |
-| 1. | [Hamed Albazeli] | [243UT246MV] |
-| 2. | [Mohammed Khaled]] | [243UT2461U] |
-| 3. | [Saloglu Youssof] | [243UT24629] |
-| 4. | [Almamary Oseid] | [241UE24169] |
-
----
-
-## 📖 Project Overview
-
-This project is submitted as a milestone-based group assignment for **TPL6213 - Programming Language Concept**. Our group selected **Dart** as the programming language and **Flutter** as the framework to demonstrate specific language capabilities and system functionalities.
-
-**UniTask** serves as the **Sample Application** for our research, designed to analyze and practically demonstrate:
-*   **Names and Bindings**: Variable scoping, lifetime management in stateful widgets.
-*   **Expressions and Assignment**: Dart's optimized assignment operators and expression evaluation.
-*   **Control Structures**: Asynchronous control flow (`Future`, `await`), loops for widget rendering, and conditional UI building.
-*   **Subprograms**: Modular function design, helper methods, and widget composition.
+*   📚 **Course & Semester Management**: Organize your university journey semester by semester with dedicated metrics and customized grade weighting.
+*   📊 **Smart GPA Predictor**: Dynamically calculates your current GPA and assesses minimum/maximum potential scores based on pending coursework (`Pass/Fail` logic included).
+*   📅 **Interactive Calendar & Weekly Schedule**: Visual layout of all your exams, assignments deadlines, and repeating course lectures.
+*   ☁️ **Cloud Backup & Restore**: Robust synchronization with Google Firebase, featuring intelligent merging that prevents data overwriting across devices.
+*   💼 **Admin Dashboard**: Powerful standalone Admin Console built utilizing FireCMS, empowering system administrators to seamlessly manage catalogs and templates.
+*   📱 **Cross-Platform Delivery**: Supports iOS, Android, and Web platforms natively. Fully automated CI/CD pipelines generate production artifacts (IPA, APK, AAB, ZIP) automatically upon new releases.
 
 ---
 
-## 🎯 System Functionalities Evaluated
+## 🛠️ Technology Stack
 
-Per the project guidelines for Dart/Flutter, this application implements the following core features:
-
-### 1. User Interface Controls & Data Tables
-*   **Dashboard**: A comprehensive view combining a digital clock, weekly calendar strip, and task lists.
-*   **Course Management**: Custom data tables and list views to manage courses and assessments.
-*   **Input Forms**: Validated text fields and date pickers for adding tasks (Demonstrates *Regular Expression* usage in validation).
-
-### 2. Calendar & Time Management
-*   **Smart Calendar**: Integrated `TableCalendar` with custom builders to mark deadlines.
-*   **Busy Window Detection**: Logic to highlight days with high workload (demonstrating complex *Control Structures*).
-*   **Timer Control**: A real-time digital clock session timer implemented using Dart's `Timer.periodic`.
-
-### 3. Data Persistence & Error Handling
-*   **Local Storage**: Implements `shared_preferences` to persist user data across sessions.
-*   **Error Handling**: Robust `try-catch` blocks in `StorageService` to manage data corruption or missing files safely.
-
-### 4. Progress Visualization
-*   **Circular Indicators**: Visual representation of "Acquired", "Lost", and "Remaining" grade points.
-*   **Weight Calculation**: Dynamic calculation of grades based on user-defined weights (Coursework vs. Final).
+*   **Frontend**: Flutter / Dart
+*   **Backend & Database**: Firebase Authentication, Cloud Firestore
+*   **Admin Console**: FireCMS (React / Vite)
+*   **CI/CD Pipeline**: GitHub Actions
+*   **State Management / Architecture**: (Add your architecture here, e.g., Provider/Riverpod)
 
 ---
 
+## 🚀 Getting Started
 
+### Prerequisites
+*   Flutter SDK (v3.x or higher)
+*   Firebase Project setup internally via `.env` credentials
 
-## 🚀 Installation & Running
-
-To run this sample application for demonstration:
-
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/yourusername/unitask.git
-    cd unitask
-    ```
-
-2.  **Install Dependencies**
-    ```bash
-    flutter pub get
-    ```
-
-3.  **Run on Chrome (Web)**
-    ```bash
-    flutter run -d chrome
-    ```
-    *Note: The web build has been optimized for mobile-view simulation.*
-
-4.  **Run on Mobile (Android/iOS)**
-    ```bash
-    flutter run
-    ```
+### Installation (Local Development)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/hamedtareqhamed/UniTask.git
+   cd UniTask
+   ```
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+3. Prepare the environment variables (`.env` file required at root).
+4. Run the project:
+   ```bash
+   flutter run
+   ```
 
 ---
 
-## 📂 Project Structure
+## 👤 Author
 
-```
-lib/
-├── main.dart               # Entry point & Theme configuration
-├── dashboard_screen.dart   # Main logic (Timer, Calendar, Task List)
-├── courses_screen.dart     # Course management UI
-├── course_detail_screen.dart # Grade calculation & Data visualization
-├── storage_service.dart    # Data persistence (Subprograms example)
-└── models/                 # Data models (Names & Bindings example)
-```
+**hamed albazeli**
+- GitHub: [@hamedtareqhamed](https://github.com/hamedtareqhamed)
 
----
+## 📜 Copyright
+**© 2026 hamed albazeli. All rights reserved.**
 
-Built with ❤️ by **Powe performers Team** for TPL6213.
+This project and its source code are strictly private and proprietary. No license is granted for reading, copying, modifying, compiling, or distributing this code without explicit prior permission from the author.
