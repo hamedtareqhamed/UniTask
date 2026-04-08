@@ -34,6 +34,30 @@ migrate_working_dir/
 /build/
 
 # Web related
+/firecms/node_modules/
+/firecms/dist/
+
+# --- SECRETS PROTECTION ---
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Signing / Key files
+*.jks
+*.keystore
+*.p12
+*.jks.*
+key.properties
+
+# Firebase Service files (if they exist)
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart.bak
+
+# --- ------------------- ---
 
 # Symbolication related
 app.*.symbols
