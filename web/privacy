@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - UniTask</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; padding: 40px; max-width: 900px; margin: auto; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        p, li { color: #555; }
+        .footer { margin-top: 50px; font-size: 0.9em; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Privacy Policy</h1>
+    <p>Last updated: January 30, 2026</p>
+
+    <p>This Privacy Policy describes our policies and procedures on the collection, use, and disclosure of your information when you use the <strong>UniTask</strong> application and tells you about your privacy rights.</p>
+
+    <h2>1. Information Collection and Use</h2>
+    <p>While using our Application, we may collect certain information to provide and improve the Service:</p>
+    <ul>
+        <li><strong>Personal Data:</strong> We may collect your email address if you use Firebase Authentication to sync your tasks.</li>
+        <li><strong>Usage Data:</strong> Information such as your device's Internet Protocol address (e.g., IP address), device type, and app version may be collected automatically via Firebase Services.</li>
+    </ul>
+
+    <h2>2. Third-Party Services</h2>
+    <p>The app does use third-party services that may collect information used to identify you:</p>
+    <ul>
+        <li><a href="https://www.google.com/policies/privacy/" target="_blank">Google Play Services</a></li>
+        <li><a href="https://firebase.google.com/support/privacy" target="_blank">Firebase Analytics & Hosting</a></li>
+    </ul>
+
+    <h2>3. Data Retention</h2>
+    <p>We will retain your Personal Data only for as long as is necessary for the purposes set out in this Privacy Policy, specifically for maintaining your academic tasks and account preferences.</p>
+
+    <h2>4. Security of Your Data</h2>
+    <p>The security of your data is important to us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. We strive to use commercially acceptable means to protect your Personal Data.</p>
+
+    <h2>5. Children's Privacy</h2>
+    <p>Our Service does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from anyone under the age of 13.</p>
+
+    <h2>6. Changes to this Privacy Policy</h2>
+    <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.</p>
+
+    <h2>7. Contact Us</h2>
+    <p>If you have any questions about this Privacy Policy, you can contact us:</p>
+    <ul>
+        <li>By email: <strong>hamedalbazly70@gmail.com</strong></li>
+    </ul>
+
+    <div class="footer">
+        <p>© 2026 UniTask. All rights reserved.</p>
+    </div>
+</body>
+</html>
