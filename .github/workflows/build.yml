@@ -1,0 +1,106 @@
+name: Build UniTask (Android & iOS)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          FLUTTER_FIREBASE_API_KEY_ANDROID=${{ secrets.FLUTTER_FIREBASE_API_KEY_ANDROID }}
+          FLUTTER_FIREBASE_APP_ID_ANDROID=${{ secrets.FLUTTER_FIREBASE_APP_ID_ANDROID }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_FILE=${{ secrets.ANDROID_STORE_FILE }}
+          ANDROID_STORE_PASSWORD=${{ secrets.ANDROID_STORE_PASSWORD }}
+          EOF
+          
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release --dart-define-from-file=.env
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build_ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          architecture: x64
+          
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          FLUTTER_FIREBASE_API_KEY_IOS=${{ secrets.FLUTTER_FIREBASE_API_KEY_IOS }}
+          FLUTTER_FIREBASE_APP_ID_IOS=${{ secrets.FLUTTER_FIREBASE_APP_ID_IOS }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          IOS_CERTIFICATE_BASE64=${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD=${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64=${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD=${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install Apple Certificate & Provisioning Profile
+        run: |
+          # Source the .env file
+          set -a
+          source .env
+          set +a
+
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profile from bash environment variables
+          echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$IOS_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$IOS_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Build IPA (Signed)
+        run: flutter build ipa --release --dart-define-from-file=.env
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ipa
+          path: build/ios/ipa/*.ipa
