@@ -36,6 +36,7 @@ migrate_working_dir/
 # Web related
 /firecms/node_modules/
 /firecms/dist/
+.firebase/
 
 # --- SECRETS PROTECTION ---
 # Environment files
