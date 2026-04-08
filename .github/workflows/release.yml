@@ -126,7 +126,7 @@ jobs:
             echo "No valid iOS Certificate provided. Skipping codesign..."
             # Try to build unsigned. May fail if project structure requires a Team ID.
             flutter build ios --release --no-codesign --dart-define-from-file=.env || true
-            cd build/ios/iphoneos && zip -r ../../../ios-app-unsigned.zip Runner.app && cd ../../../ || true
+            cd build/ios/iphoneos && mkdir -p Payload && cp -R Runner.app Payload/ && zip -q -r ../../../ios-app-unsigned.ipa Payload && cd ../../../ || true
           else
             CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
             PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
@@ -157,5 +157,5 @@ jobs:
         with:
           fail_on_unmatched_files: false
           files: |
-            ios-app-unsigned.zip
+            ios-app-unsigned.ipa
             ios-app-signed.ipa

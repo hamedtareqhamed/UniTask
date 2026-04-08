@@ -73,27 +73,113 @@ class FirebaseService {
 
     final data = doc.data()!;
 
-    // Restore active semester
-    await StorageService.saveActiveSemesterId(data['activeSemesterId']);
+    // 1. Load local data
+    final localSemesters = await StorageService.loadSemesters();
+    final localCourses = await StorageService.loadCourses();
+    final localTasks = await StorageService.loadTasks();
+    final localNotes = await StorageService.loadNotes();
 
-    // Restore tasks
-    final tasksData = (data['tasks'] as List<dynamic>? ?? []);
-    final tasks = tasksData.map((t) => Task.fromMap(t as Map<String, dynamic>)).toList();
-    await StorageService.saveTasks(tasks);
+    // 2. Parse downloaded data
+    final cloudSemesters = (data['semesters'] as List<dynamic>? ?? [])
+        .map((s) => Semester.fromMap(s as Map<String, dynamic>))
+        .toList();
+    final cloudCourses = (data['courses'] as List<dynamic>? ?? [])
+        .map((c) => Course.fromMap(c as Map<String, dynamic>))
+        .toList();
+    final cloudTasks = (data['tasks'] as List<dynamic>? ?? [])
+        .map((t) => Task.fromMap(t as Map<String, dynamic>))
+        .toList();
+    final cloudNotes = (data['notes'] as List<dynamic>? ?? [])
+        .map((n) => Note.fromMap(n as Map<String, dynamic>))
+        .toList();
 
-    // Restore courses
-    final coursesData = (data['courses'] as List<dynamic>? ?? []);
-    final courses = coursesData.map((c) => Course.fromMap(c as Map<String, dynamic>)).toList();
-    await StorageService.saveCourses(courses);
+    Map<String, String> semesterIdMap = {};
+    List<Semester> mergedSemesters = List.from(localSemesters);
 
-    // Restore notes
-    final notesData = (data['notes'] as List<dynamic>? ?? []);
-    final notes = notesData.map((n) => Note.fromMap(n as Map<String, dynamic>)).toList();
-    await StorageService.saveNotes(notes);
+    // 3. Merge Semesters
+    for (var cloudSem in cloudSemesters) {
+      int matchIndex = localSemesters.indexWhere((ls) => ls.name == cloudSem.name);
+      if (matchIndex != -1) {
+        int counter = 1;
+        String newName = '${cloudSem.name} $counter';
+        while (localSemesters.any((ls) => ls.name == newName)) {
+          counter++;
+          newName = '${cloudSem.name} $counter';
+        }
+        cloudSem.name = newName;
+        String oldId = cloudSem.id;
+        cloudSem.id = DateTime.now().millisecondsSinceEpoch.toString() + 'sem';
+        semesterIdMap[oldId] = cloudSem.id;
+        mergedSemesters.add(cloudSem);
+      } else {
+        if (localSemesters.any((ls) => ls.id == cloudSem.id)) {
+          String oldId = cloudSem.id;
+          cloudSem.id = DateTime.now().millisecondsSinceEpoch.toString() + 'sem${cloudSem.name}';
+          semesterIdMap[oldId] = cloudSem.id;
+        }
+        mergedSemesters.add(cloudSem);
+      }
+    }
 
-    // Restore semesters
-    final semestersData = (data['semesters'] as List<dynamic>? ?? []);
-    final semesters = semestersData.map((s) => Semester.fromMap(s as Map<String, dynamic>)).toList();
-    await StorageService.saveSemesters(semesters);
+    // 4. Merge Courses
+    List<Course> mergedCourses = List.from(localCourses);
+    for (var cloudCourse in cloudCourses) {
+      if (cloudCourse.semesterId != null && semesterIdMap.containsKey(cloudCourse.semesterId)) {
+        cloudCourse.semesterId = semesterIdMap[cloudCourse.semesterId];
+      }
+
+      if (cloudCourse.semesterId == null || cloudCourse.semesterId!.isEmpty || cloudCourse.semesterId == 'undefined') {
+        cloudCourse.semesterId = null;
+        int existingIndex = mergedCourses.indexWhere((lc) => lc.id == cloudCourse.id);
+        if (existingIndex != -1) {
+          mergedCourses[existingIndex] = cloudCourse;
+        } else {
+          mergedCourses.add(cloudCourse);
+        }
+      } else {
+        int existingIndex = mergedCourses.indexWhere((lc) => lc.id == cloudCourse.id);
+        if (existingIndex != -1) {
+          if (mergedCourses[existingIndex].semesterId != cloudCourse.semesterId) {
+             cloudCourse.id = DateTime.now().millisecondsSinceEpoch.toString() + 'crs';
+             mergedCourses.add(cloudCourse);
+          } else {
+             mergedCourses[existingIndex] = cloudCourse; // Overwrite if same semester and same ID
+          }
+        } else {
+          mergedCourses.add(cloudCourse);
+        }
+      }
+    }
+
+    // 5. Merge Tasks
+    List<Task> mergedTasks = List.from(localTasks);
+    for (var cloudTask in cloudTasks) {
+      if (cloudTask.semesterId != null && semesterIdMap.containsKey(cloudTask.semesterId)) {
+        cloudTask.semesterId = semesterIdMap[cloudTask.semesterId];
+      }
+      mergedTasks.add(cloudTask);
+    }
+
+    // 6. Merge Notes
+    List<Note> mergedNotes = List.from(localNotes);
+    for (var cloudNote in cloudNotes) {
+      int existingIdx = mergedNotes.indexWhere((n) => n.id == cloudNote.id);
+      if (existingIdx != -1) {
+         mergedNotes[existingIdx] = cloudNote;
+      } else {
+         mergedNotes.add(cloudNote);
+      }
+    }
+
+    // 7. Save merged data
+    await StorageService.saveSemesters(mergedSemesters);
+    await StorageService.saveCourses(mergedCourses);
+    await StorageService.saveTasks(mergedTasks);
+    await StorageService.saveNotes(mergedNotes);
+
+    if (data['activeSemesterId'] != null) {
+      String newActiveId = semesterIdMap[data['activeSemesterId']] ?? data['activeSemesterId'];
+      await StorageService.saveActiveSemesterId(newActiveId);
+    }
   }
 }
