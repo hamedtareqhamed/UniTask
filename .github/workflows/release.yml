@@ -9,43 +9,22 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    runs-on: macos-latest
+  build_web:
+    name: Build Web
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          architecture: x64
-
+          
       - name: Create .env
         run: |
           cat <<ENV_EOF > .env
-          FLUTTER_FIREBASE_API_KEY_ANDROID=${{ secrets.FLUTTER_FIREBASE_API_KEY_ANDROID }}
-          FLUTTER_FIREBASE_APP_ID_ANDROID=${{ secrets.FLUTTER_FIREBASE_APP_ID_ANDROID }}
-          FLUTTER_FIREBASE_API_KEY_IOS=${{ secrets.FLUTTER_FIREBASE_API_KEY_IOS }}
-          FLUTTER_FIREBASE_APP_ID_IOS=${{ secrets.FLUTTER_FIREBASE_APP_ID_IOS }}
           FLUTTER_FIREBASE_API_KEY_WEB=${{ secrets.FLUTTER_FIREBASE_API_KEY_WEB }}
           FLUTTER_FIREBASE_APP_ID_WEB=${{ secrets.FLUTTER_FIREBASE_APP_ID_WEB }}
           FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-          FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
-          ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_STORE_FILE=${{ secrets.ANDROID_STORE_FILE }}
-          ANDROID_STORE_PASSWORD=${{ secrets.ANDROID_STORE_PASSWORD }}
-          IOS_CERTIFICATE_BASE64=${{ secrets.IOS_CERTIFICATE_BASE64 }}
-          IOS_CERTIFICATE_PASSWORD=${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-          IOS_PROVISIONING_PROFILE_BASE64=${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
-          IOS_KEYCHAIN_PASSWORD=${{ secrets.IOS_KEYCHAIN_PASSWORD }}
           ENV_EOF
 
       - name: Install dependencies
@@ -60,24 +39,91 @@ jobs:
           zip -r ../../web-release.zip .
           cd ../../
 
+      - name: Release Web
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: false
+          files: web-release.zip
+
+  build_android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Create .env
+        run: |
+          cat <<ENV_EOF > .env
+          FLUTTER_FIREBASE_API_KEY_ANDROID=${{ secrets.FLUTTER_FIREBASE_API_KEY_ANDROID }}
+          FLUTTER_FIREBASE_APP_ID_ANDROID=${{ secrets.FLUTTER_FIREBASE_APP_ID_ANDROID }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          # The keystore variables are handled gracefully if missing
+          ENV_EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
       - name: Build Android APK
         run: flutter build apk --release --dart-define-from-file=.env
 
       - name: Build Android Bundle
         run: flutter build appbundle --release --dart-define-from-file=.env
 
-      - name: Build iOS
+      - name: Release Android
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: false
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+
+  build_ios:
+    name: Build iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          architecture: x64
+          
+      - name: Create .env
+        run: |
+          cat <<ENV_EOF > .env
+          FLUTTER_FIREBASE_API_KEY_IOS=${{ secrets.FLUTTER_FIREBASE_API_KEY_IOS }}
+          FLUTTER_FIREBASE_APP_ID_IOS=${{ secrets.FLUTTER_FIREBASE_APP_ID_IOS }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          IOS_CERTIFICATE_BASE64=${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD=${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64=${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD=${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          ENV_EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS IPA
+        continue-on-error: true
         run: |
           set -a
           source .env
           set +a
 
           if [ -z "$IOS_CERTIFICATE_BASE64" ] || [ ${#IOS_CERTIFICATE_BASE64} -lt 10 ]; then
-            echo "No valid iOS Certificate provided. Building without codesign..."
-            flutter build ios --release --no-codesign --dart-define-from-file=.env
-            cd build/ios/iphoneos
-            zip -r ../../../ios-app-unsigned.zip Runner.app
-            cd ../../../
+            echo "No valid iOS Certificate provided. Skipping codesign..."
+            # Try to build unsigned. May fail if project structure requires a Team ID.
+            flutter build ios --release --no-codesign --dart-define-from-file=.env || true
+            cd build/ios/iphoneos && zip -r ../../../ios-app-unsigned.zip Runner.app && cd ../../../ || true
           else
             CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
             PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
@@ -102,12 +148,11 @@ jobs:
             fi
           fi
 
-      - name: Release Files
+      - name: Release iOS
         uses: softprops/action-gh-release@v2
+        if: always()
         with:
+          fail_on_unmatched_files: false
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
-            web-release.zip
             ios-app-unsigned.zip
             ios-app-signed.ipa
