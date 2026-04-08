@@ -52,9 +52,9 @@ class Assessment {
       title: map['title'],
       type: AssessmentType.values[map['type']],
       category: AssessmentCategory.values[map['category']],
-      score: map['score'], // Can be null
-      maxScore: map['maxScore'],
-      weight: map['weight'],
+      score: map['score'] != null ? (map['score'] as num).toDouble() : null,
+      maxScore: (map['maxScore'] as num).toDouble(),
+      weight: (map['weight'] as num).toDouble(),
       deadline: map['deadline'] != null
           ? DateTime.parse(map['deadline'])
           : null,

@@ -29,34 +29,33 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Helper to read from Environment (Build-time) or Dotenv (Runtime)
-  static String _get(String key, {String fallback = ''}) {
-    return String.fromEnvironment(key, defaultValue: dotenv.get(key, fallback: fallback));
+  static String _get(String envVal, String key, {String fallback = ''}) {
+    return envVal.isNotEmpty ? envVal : dotenv.get(key, fallback: fallback);
   }
 
   static FirebaseOptions get web => FirebaseOptions(
-    apiKey: _get('FLUTTER_FIREBASE_API_KEY_WEB'),
-    appId: _get('FLUTTER_FIREBASE_APP_ID_WEB'),
-    messagingSenderId: _get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: _get('FIREBASE_PROJECT_ID'),
-    authDomain: _get('FIREBASE_AUTH_DOMAIN'),
-    storageBucket: _get('FIREBASE_STORAGE_BUCKET'),
+    apiKey: _get(const String.fromEnvironment('FLUTTER_FIREBASE_API_KEY_WEB'), 'FLUTTER_FIREBASE_API_KEY_WEB'),
+    appId: _get(const String.fromEnvironment('FLUTTER_FIREBASE_APP_ID_WEB'), 'FLUTTER_FIREBASE_APP_ID_WEB'),
+    messagingSenderId: _get(const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'), 'FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: _get(const String.fromEnvironment('FIREBASE_PROJECT_ID'), 'FIREBASE_PROJECT_ID'),
+    authDomain: _get(const String.fromEnvironment('FIREBASE_AUTH_DOMAIN'), 'FIREBASE_AUTH_DOMAIN'),
+    storageBucket: _get(const String.fromEnvironment('FIREBASE_STORAGE_BUCKET'), 'FIREBASE_STORAGE_BUCKET'),
   );
 
   static FirebaseOptions get android => FirebaseOptions(
-    apiKey: _get('FLUTTER_FIREBASE_API_KEY_ANDROID'),
-    appId: _get('FLUTTER_FIREBASE_APP_ID_ANDROID'),
-    messagingSenderId: _get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: _get('FIREBASE_PROJECT_ID'),
-    storageBucket: _get('FIREBASE_STORAGE_BUCKET'),
+    apiKey: _get(const String.fromEnvironment('FLUTTER_FIREBASE_API_KEY_ANDROID'), 'FLUTTER_FIREBASE_API_KEY_ANDROID'),
+    appId: _get(const String.fromEnvironment('FLUTTER_FIREBASE_APP_ID_ANDROID'), 'FLUTTER_FIREBASE_APP_ID_ANDROID'),
+    messagingSenderId: _get(const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'), 'FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: _get(const String.fromEnvironment('FIREBASE_PROJECT_ID'), 'FIREBASE_PROJECT_ID'),
+    storageBucket: _get(const String.fromEnvironment('FIREBASE_STORAGE_BUCKET'), 'FIREBASE_STORAGE_BUCKET'),
   );
 
   static FirebaseOptions get ios => FirebaseOptions(
-    apiKey: _get('FLUTTER_FIREBASE_API_KEY_IOS'),
-    appId: _get('FLUTTER_FIREBASE_APP_ID_IOS'),
-    messagingSenderId: _get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: _get('FIREBASE_PROJECT_ID'),
-    storageBucket: _get('FIREBASE_STORAGE_BUCKET'),
+    apiKey: _get(const String.fromEnvironment('FLUTTER_FIREBASE_API_KEY_IOS'), 'FLUTTER_FIREBASE_API_KEY_IOS'),
+    appId: _get(const String.fromEnvironment('FLUTTER_FIREBASE_APP_ID_IOS'), 'FLUTTER_FIREBASE_APP_ID_IOS'),
+    messagingSenderId: _get(const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'), 'FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: _get(const String.fromEnvironment('FIREBASE_PROJECT_ID'), 'FIREBASE_PROJECT_ID'),
+    storageBucket: _get(const String.fromEnvironment('FIREBASE_STORAGE_BUCKET'), 'FIREBASE_STORAGE_BUCKET'),
     iosBundleId: 'online.albazly.unitask',
   );
 }
