@@ -48,22 +48,42 @@ class GPAUtils {
   /// Returns both Letter Grade and Points for a given absolute mark.
   static Map<String, dynamic> getGradeInfo(double mark) {
     String letter = 'F';
-    if (mark >= 90.0) letter = 'A+';
-    else if (mark >= 80.0) letter = 'A';
-    else if (mark >= 75.0) letter = 'A-';
-    else if (mark >= 70.0) letter = 'B+';
-    else if (mark >= 65.0) letter = 'B';
-    else if (mark >= 60.0) letter = 'B-';
-    else if (mark >= 55.0) letter = 'C+';
-    else if (mark >= 50.0) letter = 'C';
-    else if (mark >= 47.0) letter = 'C-';
-    else if (mark >= 44.0) letter = 'D+';
-    else if (mark >= 40.0) letter = 'D';
+    if (mark >= 90.0) {
+      letter = 'A+';
+    } else if (mark >= 80.0) {
+      letter = 'A';
+    } else if (mark >= 75.0) {
+      letter = 'A-';
+    } else if (mark >= 70.0) {
+      letter = 'B+';
+    } else if (mark >= 65.0) {
+      letter = 'B';
+    } else if (mark >= 60.0) {
+      letter = 'B-';
+    } else if (mark >= 55.0) {
+      letter = 'C+';
+    } else if (mark >= 50.0) {
+      letter = 'C';
+    } else if (mark >= 47.0) {
+      letter = 'C-';
+    } else if (mark >= 44.0) {
+      letter = 'D+';
+    } else if (mark >= 40.0) {
+      letter = 'D';
+    }
     
-    if (mark >= 75.0 && mark < 80.0) letter = 'A-';
-    if (mark >= 70.0 && mark < 75.0) letter = 'B+';
-    if (mark >= 65.0 && mark < 70.0) letter = 'B';
-    if (mark >= 60.0 && mark < 65.0) letter = 'B-';
+    if (mark >= 75.0 && mark < 80.0) {
+      letter = 'A-';
+    }
+    if (mark >= 70.0 && mark < 75.0) {
+      letter = 'B+';
+    }
+    if (mark >= 65.0 && mark < 70.0) {
+      letter = 'B';
+    }
+    if (mark >= 60.0 && mark < 65.0) {
+      letter = 'B-';
+    }
 
     return {
       'letter': letter,

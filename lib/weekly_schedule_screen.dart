@@ -184,19 +184,19 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
     List<Widget> widgets = [];
     for (var course in _courses) {
       if (course.lectureTime != null && course.lectureTime!.startsWith('$day ')) {
-        widgets.add(_buildClassBox(course, course.lectureTime!, course.lectureRoom, 'Lecture', course.lectureDuration, rowHeight));
+        widgets.add(_buildClassBox(course, course.lectureTime!, course.lectureRoom, course.lectureSection, 'Lecture', course.lectureDuration, rowHeight));
       }
       if (course.hasTutorial && course.tutorialTime != null && course.tutorialTime!.startsWith('$day ')) {
-        widgets.add(_buildClassBox(course, course.tutorialTime!, course.tutorialRoom, 'Tutorial', course.tutorialDuration, rowHeight));
+        widgets.add(_buildClassBox(course, course.tutorialTime!, course.tutorialRoom, course.tutorialSection, 'Tutorial', course.tutorialDuration, rowHeight));
       }
       if (course.hasLab && course.labTime != null && course.labTime!.startsWith('$day ')) {
-        widgets.add(_buildClassBox(course, course.labTime!, course.labRoom, 'Lab', course.labDuration, rowHeight));
+        widgets.add(_buildClassBox(course, course.labTime!, course.labRoom, course.labSection, 'Lab', course.labDuration, rowHeight));
       }
     }
     return widgets;
   }
 
-  Widget _buildClassBox(Course course, String timeStr, String? room, String type, int durationMinutes, double rowHeight) {
+  Widget _buildClassBox(Course course, String timeStr, String? room, String? sectionCode, String type, int durationMinutes, double rowHeight) {
     final parts = timeStr.split(' ');
     final timeParts = parts[1].split(':');
     final hour = int.parse(timeParts[0]);
@@ -210,6 +210,15 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
     final startMinutes = (hour * 60 + minute) - (_startHour * 60);
     final top = (startMinutes / 60) * rowHeight; 
     final height = (durationMinutes / 60) * rowHeight;
+
+    String typeLabel = type.substring(0, 3).toUpperCase();
+    if (sectionCode != null && sectionCode.isNotEmpty) {
+      typeLabel += ' - $sectionCode';
+    }
+
+    String displayTitle = (course.courseCode != null && course.courseCode!.isNotEmpty) 
+        ? course.courseCode! 
+        : course.name;
 
     return Positioned(
       top: top,
@@ -233,7 +242,7 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      course.name, 
+                      displayTitle, 
                       style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold, color: course.color),
                     ),
                   ),
@@ -246,7 +255,7 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    type.substring(0, 3).toUpperCase(),
+                    typeLabel,
                     style: TextStyle(fontSize: subSize * 0.8, fontWeight: FontWeight.w900, color: course.color),
                   ),
                 ),

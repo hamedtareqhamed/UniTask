@@ -16,7 +16,7 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   List<Course> _courses = [];
   Semester? _activeSemester;
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+  final CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = GPAUtils.getMalaysiaTime();
   DateTime? _selectedDay;
 
@@ -82,7 +82,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   return Row(
                     children: [
                       // Week Number Sidebar
-                      Container(
+                      SizedBox(
                         width: 32,
                         child: Column(
                           children: [
@@ -263,7 +263,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     text: TextSpan(
                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: course.color.withValues(alpha: 0.9)),
                       children: [
-                        TextSpan(text: course.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 8)),
+                        TextSpan(
+                          text: (course.courseCode != null && course.courseCode!.isNotEmpty) 
+                                ? course.courseCode! 
+                                : (course.name.length > 6 ? course.name.substring(0, 6) : course.name), 
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 8)
+                        ),
                         const TextSpan(text: ' '),
                         TextSpan(text: a.title),
                       ],

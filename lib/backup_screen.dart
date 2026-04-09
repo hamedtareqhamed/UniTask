@@ -33,10 +33,12 @@ class _BackupScreenState extends State<BackupScreen> {
       } else {
         await _firebaseService.signUp(_emailController.text, _passwordController.text);
       }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_isLogin ? 'Logged in successfully!' : 'Account created!')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
       setState(() => _isLoading = false);
@@ -48,9 +50,11 @@ class _BackupScreenState extends State<BackupScreen> {
     try {
       final credential = await _firebaseService.signInWithGoogle();
       if (credential != null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged in with Google!')));
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')));
     } finally {
       setState(() => _isLoading = false);
@@ -61,8 +65,10 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _isLoading = true);
     try {
       await _firebaseService.uploadBackup();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Backup successful!')));
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup failed: ${e.toString()}')));
     } finally {
       setState(() => _isLoading = false);
@@ -87,8 +93,10 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _isLoading = true);
     try {
       await _firebaseService.downloadRestore();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore successful!')));
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: ${e.toString()}')));
     } finally {
       setState(() => _isLoading = false);
@@ -99,8 +107,10 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _isLoading = true);
     try {
       await _exportService.exportToZip();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export successful! Check your downloads.')));
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: ${e.toString()}')));
     } finally {
       setState(() => _isLoading = false);

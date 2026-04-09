@@ -17,7 +17,7 @@ class ExportService {
 
     // Header info
     rows.add(['Course Name:', course.name]);
-    rows.add(['Professor:', course.professor]);
+    rows.add(['Course Code:', course.courseCode ?? 'N/A']);
     rows.add(['Credits:', course.credits]);
     rows.add(['Coursework Weight:', '${course.courseworkWeight}%']);
     rows.add(['Final Weight:', '${course.finalWeight}%']);

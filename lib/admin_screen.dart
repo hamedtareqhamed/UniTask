@@ -139,13 +139,13 @@ class _AdminScreenState extends State<AdminScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _status.contains('Error') 
-                      ? Colors.redAccent.withOpacity(0.1) 
-                      : Colors.greenAccent.withOpacity(0.1),
+                      ? Colors.redAccent.withValues(alpha: 0.1) 
+                      : Colors.greenAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _status.contains('Error') 
-                        ? Colors.redAccent.withOpacity(0.3) 
-                        : Colors.greenAccent.withOpacity(0.3)
+                        ? Colors.redAccent.withValues(alpha: 0.3) 
+                        : Colors.greenAccent.withValues(alpha: 0.3)
                   ),
                 ),
                 child: Text(

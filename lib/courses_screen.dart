@@ -24,13 +24,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   // Controllers and State Variables
   final _nameController = TextEditingController();
-  final _profController = TextEditingController();
+  final _codeController = TextEditingController();
   final _creditsController = TextEditingController();
   
   // Weekly Schedule Controllers
   final _lectureRoomController = TextEditingController();
+  final _lectureSecController = TextEditingController();
   final _tutorialRoomController = TextEditingController();
+  final _tutorialSecController = TextEditingController();
   final _labRoomController = TextEditingController();
+  final _labSecController = TextEditingController();
   
   int _lectureDay = 1;
   TimeOfDay _lectureTime = const TimeOfDay(hour: 10, minute: 0);
@@ -62,11 +65,14 @@ class _CoursesScreenState extends State<CoursesScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _profController.dispose();
+    _codeController.dispose();
     _creditsController.dispose();
     _lectureRoomController.dispose();
+    _lectureSecController.dispose();
     _tutorialRoomController.dispose();
+    _tutorialSecController.dispose();
     _labRoomController.dispose();
+    _labSecController.dispose();
     super.dispose();
   }
 
@@ -170,7 +176,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
     final newCourse = Course(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: courseName,
-      professor: entry.instructor,
+      courseCode: entry.courseCode,
       credits: entry.credits,
       colorValue: Colors.primaries[_allCourses.length % Colors.primaries.length].toARGB32(),
       courseworkWeight: entry.courseworkWeight,
@@ -196,36 +202,39 @@ class _CoursesScreenState extends State<CoursesScreen> {
   void _showCourseDialog({Course? course}) {
     if (course != null) {
       _nameController.text = course.name;
-      _profController.text = course.professor;
+      _codeController.text = course.courseCode ?? '';
       _creditsController.text = course.credits.toString();
       _courseworkWeight = course.courseworkWeight;
       _finalWeight = course.finalWeight;
       _selectedSemesterId = course.semesterId;
       
       _lectureRoomController.text = course.lectureRoom ?? '';
+      _lectureSecController.text = course.lectureSection ?? '';
       _lectureDuration = course.lectureDuration;
       _hasTutorial = course.hasTutorial;
       _tutorialRoomController.text = course.tutorialRoom ?? '';
+      _tutorialSecController.text = course.tutorialSection ?? '';
       _tutorialDuration = course.tutorialDuration;
       _hasLab = course.hasLab;
       _labRoomController.text = course.labRoom ?? '';
+      _labSecController.text = course.labSection ?? '';
       _labDuration = course.labDuration;
       _isPassFail = course.isPassFail;
       _selectedColor = course.colorValue;
 
-      if (course.lectureTime != null) {
+      if (course.lectureTime != null && course.lectureTime!.contains(' ')) {
         final parts = course.lectureTime!.split(' ');
         _lectureDay = int.parse(parts[0]);
         final timeParts = parts[1].split(':');
         _lectureTime = TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]));
       }
-      if (course.tutorialTime != null) {
+      if (course.tutorialTime != null && course.tutorialTime!.contains(' ')) {
         final parts = course.tutorialTime!.split(' ');
         _tutorialDay = int.parse(parts[0]);
         final timeParts = parts[1].split(':');
         _tutorialTime = TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]));
       }
-      if (course.labTime != null) {
+      if (course.labTime != null && course.labTime!.contains(' ')) {
         final parts = course.labTime!.split(' ');
         _labDay = int.parse(parts[0]);
         final timeParts = parts[1].split(':');
@@ -233,16 +242,19 @@ class _CoursesScreenState extends State<CoursesScreen> {
       }
     } else {
       _nameController.clear();
-      _profController.clear();
+      _codeController.clear();
       _creditsController.clear();
       _courseworkWeight = 60.0;
       _finalWeight = 40.0;
       _selectedSemesterId = _activeSemesterId;
       _lectureRoomController.clear();
+      _lectureSecController.clear();
       _lectureDuration = 120;
       _tutorialRoomController.clear();
+      _tutorialSecController.clear();
       _tutorialDuration = 120;
       _labRoomController.clear();
+      _labSecController.clear();
       _labDuration = 120;
       _hasTutorial = false;
       _hasLab = false;
@@ -255,142 +267,230 @@ class _CoursesScreenState extends State<CoursesScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(course == null ? 'Add Course' : 'Edit Course'),
-              content: SingleChildScrollView(
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 500, maxHeight: 800),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Course Name'),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(course == null ? 'Add Course' : 'Edit Course', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
-                    TextField(
-                      controller: _profController,
-                      decoration: const InputDecoration(labelText: 'Professor Name'),
-                    ),
-                    TextField(
-                      controller: _creditsController,
-                      decoration: const InputDecoration(labelText: 'Credits'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String?>(
-                      value: _selectedSemesterId,
-                      decoration: const InputDecoration(labelText: 'Semester'),
-                      items: [
-                        const DropdownMenuItem<String?>(value: null, child: Text('Undefined')),
-                        ..._semesters.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
-                      ],
-                      onChanged: (val) => setDialogState(() => _selectedSemesterId = val),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Course Color', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 44,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        shrinkWrap: true,
-                        children: Colors.primaries.map((color) {
-                          return GestureDetector(
-                            onTap: () => setDialogState(() => _selectedColor = color.toARGB32()),
-                            child: Container(
-                              width: 30,
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: _selectedColor == color.toARGB32() ? Border.all(color: Colors.white, width: 2) : null,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // CARD 1: Identity
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Color(_selectedColor), width: 2)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Identity', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: TextField(
+                                            controller: _codeController,
+                                            decoration: const InputDecoration(labelText: 'Code (e.g. CSC)'),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        GestureDetector(
+                                          onTap: () {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              builder: (ctx) => Padding(
+                                                padding: const EdgeInsets.all(16.0),
+                                                child: Wrap(
+                                                  spacing: 12,
+                                                  runSpacing: 12,
+                                                  children: Colors.primaries.map((color) => GestureDetector(
+                                                    onTap: () {
+                                                      setDialogState(() => _selectedColor = color.toARGB32());
+                                                      Navigator.pop(ctx);
+                                                    },
+                                                    child: CircleAvatar(backgroundColor: color),
+                                                  )).toList(),
+                                                ),
+                                              )
+                                            );
+                                          },
+                                          child: CircleAvatar(backgroundColor: Color(_selectedColor), child: const Icon(Icons.color_lens, color: Colors.white, size: 20)),
+                                        ),
+                                      ],
+                                    ),
+                                    TextField(
+                                      controller: _nameController,
+                                      decoration: const InputDecoration(labelText: 'Course Name'),
+                                    ),
+                                    DropdownButtonFormField<String?>(
+                                      value: _selectedSemesterId,
+                                      decoration: const InputDecoration(labelText: 'Semester'),
+                                      items: [
+                                        const DropdownMenuItem<String?>(value: null, child: Text('Undefined')),
+                                        ..._semesters.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
+                                      ],
+                                      onChanged: (val) => setDialogState(() => _selectedSemesterId = val),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          );
-                        }).toList(),
+                            const SizedBox(height: 12),
+                            // CARD 2: Academic
+                            Card(
+                              elevation: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Academic Rules', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _creditsController,
+                                            decoration: const InputDecoration(labelText: 'Credits'),
+                                            keyboardType: TextInputType.number,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: CheckboxListTile(
+                                            title: const Text('PS Mode', style: TextStyle(fontSize: 14)),
+                                            subtitle: const Text('Pass/Fail', style: TextStyle(fontSize: 10)),
+                                            value: _isPassFail,
+                                            dense: true,
+                                            contentPadding: const EdgeInsets.only(left: 8),
+                                            onChanged: (val) => setDialogState(() => _isPassFail = val ?? false),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text('Coursework Weight: ${_courseworkWeight.round()}% | Final: ${_finalWeight.round()}%', style: const TextStyle(fontSize: 12)),
+                                    Slider(
+                                      value: _courseworkWeight,
+                                      min: 0,
+                                      max: 100,
+                                      divisions: 20,
+                                      onChanged: (value) {
+                                        setDialogState(() {
+                                          _courseworkWeight = value;
+                                          _finalWeight = 100 - _courseworkWeight;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // CARD 3: Logistics
+                            Card(
+                              elevation: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Schedule & Logistics', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                                    const SizedBox(height: 12),
+                                    const Text('Lecture', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.cyanAccent)),
+                                    _buildScheduleRow(
+                                      context,
+                                      setDialogState,
+                                      day: _lectureDay,
+                                      time: _lectureTime,
+                                      duration: _lectureDuration,
+                                      roomController: _lectureRoomController,
+                                      secController: _lectureSecController,
+                                      onDayChanged: (d) => _lectureDay = d,
+                                      onTimeChanged: (t) => _lectureTime = t,
+                                      onDurationChanged: (dur) => _lectureDuration = dur,
+                                    ),
+                                    const Divider(),
+                                    CheckboxListTile(
+                                      title: const Text('Has Tutorial?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.cyanAccent)),
+                                      value: _hasTutorial,
+                                      contentPadding: EdgeInsets.zero,
+                                      onChanged: (val) => setDialogState(() => _hasTutorial = val ?? false),
+                                    ),
+                                    if (_hasTutorial)
+                                      _buildScheduleRow(
+                                        context,
+                                        setDialogState,
+                                        day: _tutorialDay,
+                                        time: _tutorialTime,
+                                        duration: _tutorialDuration,
+                                        roomController: _tutorialRoomController,
+                                        secController: _tutorialSecController,
+                                        onDayChanged: (d) => _tutorialDay = d,
+                                        onTimeChanged: (t) => _tutorialTime = t,
+                                        onDurationChanged: (dur) => _tutorialDuration = dur,
+                                      ),
+                                    const Divider(),
+                                    CheckboxListTile(
+                                      title: const Text('Has Lab?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.cyanAccent)),
+                                      value: _hasLab,
+                                      contentPadding: EdgeInsets.zero,
+                                      onChanged: (val) => setDialogState(() => _hasLab = val ?? false),
+                                    ),
+                                    if (_hasLab)
+                                      _buildScheduleRow(
+                                        context,
+                                        setDialogState,
+                                        day: _labDay,
+                                        time: _labTime,
+                                        duration: _labDuration,
+                                        roomController: _labRoomController,
+                                        secController: _labSecController,
+                                        onDayChanged: (d) => _labDay = d,
+                                        onTimeChanged: (t) => _labTime = t,
+                                        onDurationChanged: (dur) => _labDuration = dur,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    CheckboxListTile(
-                      title: const Text('Pass/Fail (PS) Mode'),
-                      subtitle: const Text('Success if >= 50, no GPA impact', style: TextStyle(fontSize: 11)),
-                      value: _isPassFail,
-                      onChanged: (val) => setDialogState(() => _isPassFail = val ?? false),
-                    ),
-                    const Divider(height: 32),
-                    const Text('Lecture Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
-                    _buildScheduleRow(
-                      context,
-                      setDialogState,
-                      day: _lectureDay,
-                      time: _lectureTime,
-                      duration: _lectureDuration,
-                      roomController: _lectureRoomController,
-                      onDayChanged: (d) => _lectureDay = d,
-                      onTimeChanged: (t) => _lectureTime = t,
-                      onDurationChanged: (dur) => _lectureDuration = dur,
-                    ),
-                    CheckboxListTile(
-                      title: const Text('Has Tutorial?'),
-                      value: _hasTutorial,
-                      onChanged: (val) => setDialogState(() => _hasTutorial = val ?? false),
-                    ),
-                    if (_hasTutorial)
-                      _buildScheduleRow(
-                        context,
-                        setDialogState,
-                        day: _tutorialDay,
-                        time: _tutorialTime,
-                        duration: _tutorialDuration,
-                        roomController: _tutorialRoomController,
-                        onDayChanged: (d) => _tutorialDay = d,
-                        onTimeChanged: (t) => _tutorialTime = t,
-                        onDurationChanged: (dur) => _tutorialDuration = dur,
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              if (course == null) {
+                                _addCourse();
+                              } else {
+                                _editCourse(course);
+                              }
+                            },
+                            child: Text(course == null ? 'Add' : 'Save'),
+                          ),
+                        ],
                       ),
-                    CheckboxListTile(
-                      title: const Text('Has Lab?'),
-                      value: _hasLab,
-                      onChanged: (val) => setDialogState(() => _hasLab = val ?? false),
-                    ),
-                    if (_hasLab)
-                      _buildScheduleRow(
-                        context,
-                        setDialogState,
-                        day: _labDay,
-                        time: _labTime,
-                        duration: _labDuration,
-                        roomController: _labRoomController,
-                        onDayChanged: (d) => _labDay = d,
-                        onTimeChanged: (t) => _labTime = t,
-                        onDurationChanged: (dur) => _labDuration = dur,
-                      ),
-                    const Divider(height: 32),
-                    Text('Coursework Weight: ${_courseworkWeight.round()}%'),
-                    Slider(
-                      value: _courseworkWeight,
-                      min: 0,
-                      max: 100,
-                      divisions: 100,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          _courseworkWeight = value;
-                          _finalWeight = 100 - _courseworkWeight;
-                        });
-                      },
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                ElevatedButton(
-                  onPressed: () {
-                    if (course == null) {
-                      _addCourse();
-                    } else {
-                      _editCourse(course);
-                    }
-                  },
-                  child: Text(course == null ? 'Add' : 'Save'),
-                ),
-              ],
             );
           },
         );
@@ -405,6 +505,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
     required TimeOfDay time,
     required int duration,
     required TextEditingController roomController,
+    required TextEditingController secController,
     required Function(int) onDayChanged,
     required Function(TimeOfDay) onTimeChanged,
     required Function(int) onDurationChanged,
@@ -417,55 +518,65 @@ class _CoursesScreenState extends State<CoursesScreen> {
             Expanded(
               child: DropdownButton<int>(
                 value: day,
-                items: List.generate(7, (i) => DropdownMenuItem(value: i + 1, child: Text(days[i]))),
+                isExpanded: true,
+                items: List.generate(7, (i) => DropdownMenuItem(value: i + 1, child: Text(days[i], style: const TextStyle(fontSize: 12)))),
                 onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() => onDayChanged(val));
-                  }
+                  if (val != null) setDialogState(() => onDayChanged(val));
                 },
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Expanded(
               child: DropdownButton<int>(
                 value: time.hour,
                 isExpanded: true,
                 items: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((h) {
                   String label = h < 12 ? '$h AM' : (h == 12 ? '12 PM' : '${h - 12} PM');
-                  if (h == 8) label = '8 AM (Morning)';
-                  if (h == 12) label = '12 PM (Evening)';
                   return DropdownMenuItem(value: h, child: Text(label, style: const TextStyle(fontSize: 12)));
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() => onTimeChanged(TimeOfDay(hour: val, minute: 0)));
-                  }
+                  if (val != null) setDialogState(() => onTimeChanged(TimeOfDay(hour: val, minute: 0)));
                 },
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Expanded(
               child: DropdownButton<int>(
                 value: duration,
+                isExpanded: true,
                 items: const [
-                  DropdownMenuItem(value: 30, child: Text('30m')),
-                  DropdownMenuItem(value: 60, child: Text('1h')),
-                  DropdownMenuItem(value: 90, child: Text('1.5h')),
-                  DropdownMenuItem(value: 120, child: Text('2h')),
-                  DropdownMenuItem(value: 180, child: Text('3h')),
+                  DropdownMenuItem(value: 30, child: Text('30m', style: TextStyle(fontSize: 12))),
+                  DropdownMenuItem(value: 60, child: Text('1h', style: TextStyle(fontSize: 12))),
+                  DropdownMenuItem(value: 90, child: Text('1.5h', style: TextStyle(fontSize: 12))),
+                  DropdownMenuItem(value: 120, child: Text('2h', style: TextStyle(fontSize: 12))),
+                  DropdownMenuItem(value: 180, child: Text('3h', style: TextStyle(fontSize: 12))),
                 ],
                 onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() => onDurationChanged(val));
-                  }
+                  if (val != null) setDialogState(() => onDurationChanged(val));
                 },
               ),
             ),
           ],
         ),
-        TextField(
-          controller: roomController,
-          decoration: const InputDecoration(labelText: 'Room Code'),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: roomController,
+                decoration: const InputDecoration(labelText: 'Room', isDense: true),
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: secController,
+                decoration: const InputDecoration(labelText: 'Sec (e.g. TC1)', isDense: true),
+                maxLength: 4,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -473,12 +584,12 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   void _addCourse() {
     if (_nameController.text.isNotEmpty &&
-        _profController.text.isNotEmpty &&
+        _codeController.text.isNotEmpty &&
         _creditsController.text.isNotEmpty) {
       final newCourse = Course(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
-        professor: _profController.text,
+        courseCode: _codeController.text,
         credits: int.tryParse(_creditsController.text) ?? 3,
         colorValue: _selectedColor,
         isPassFail: _isPassFail,
@@ -487,14 +598,17 @@ class _CoursesScreenState extends State<CoursesScreen> {
         semesterId: _selectedSemesterId,
         lectureTime: '$_lectureDay ${_lectureTime.hour}:${_lectureTime.minute}',
         lectureRoom: _lectureRoomController.text,
+        lectureSection: _lectureSecController.text,
         lectureDuration: _lectureDuration,
         hasTutorial: _hasTutorial,
         tutorialTime: _hasTutorial ? '$_tutorialDay ${_tutorialTime.hour}:${_tutorialTime.minute}' : null,
         tutorialRoom: _hasTutorial ? _tutorialRoomController.text : null,
+        tutorialSection: _hasTutorial ? _tutorialSecController.text : null,
         tutorialDuration: _tutorialDuration,
         hasLab: _hasLab,
         labTime: _hasLab ? '$_labDay ${_labTime.hour}:${_labTime.minute}' : null,
         labRoom: _hasLab ? _labRoomController.text : null,
+        labSection: _hasLab ? _labSecController.text : null,
         labDuration: _labDuration,
       );
       setState(() {
@@ -509,7 +623,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
   void _editCourse(Course course) {
     setState(() {
       course.name = _nameController.text;
-      course.professor = _profController.text;
+      course.courseCode = _codeController.text;
       course.credits = int.tryParse(_creditsController.text) ?? 3;
       course.colorValue = _selectedColor;
       course.isPassFail = _isPassFail;
@@ -518,14 +632,17 @@ class _CoursesScreenState extends State<CoursesScreen> {
       course.semesterId = _selectedSemesterId;
       course.lectureTime = '$_lectureDay ${_lectureTime.hour}:${_lectureTime.minute}';
       course.lectureRoom = _lectureRoomController.text;
+      course.lectureSection = _lectureSecController.text;
       course.lectureDuration = _lectureDuration;
       course.hasTutorial = _hasTutorial;
       course.tutorialTime = _hasTutorial ? '$_tutorialDay ${_tutorialTime.hour}:${_tutorialTime.minute}' : null;
       course.tutorialRoom = _hasTutorial ? _tutorialRoomController.text : null;
+      course.tutorialSection = _hasTutorial ? _tutorialSecController.text : null;
       course.tutorialDuration = _tutorialDuration;
       course.hasLab = _hasLab;
       course.labTime = _hasLab ? '$_labDay ${_labTime.hour}:${_labTime.minute}' : null;
       course.labRoom = _hasLab ? _labRoomController.text : null;
+      course.labSection = _hasLab ? _labSecController.text : null;
       course.labDuration = _labDuration;
       _applyFilter();
     });
@@ -741,7 +858,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                 ),
             ],
           ),
-          subtitle: Text('Prof. ${course.professor}'),
+          subtitle: Text(course.courseCode ?? ''),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'course_model.dart';
 
 class ReadyMadeEntry {
@@ -57,7 +58,7 @@ class ReadyMadeService {
         );
       }).toList();
     } catch (e) {
-      print('Error loading sections from Firestore: $e');
+      debugPrint('Error loading sections from Firestore: $e');
       return [];
     }
   }
@@ -85,7 +86,7 @@ class ReadyMadeService {
         );
       }).toList();
     } catch (e) {
-      print('Error loading assessments from Firestore for $courseCode: $e');
+      debugPrint('Error loading assessments from Firestore for $courseCode: $e');
       return [];
     }
   }

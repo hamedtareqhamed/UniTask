@@ -66,8 +66,8 @@ class Assessment {
 /// Represents a Course within the application.
 class Course {
   String id;
+  String? courseCode; // Shorthand ID e.g., CSC101
   String name;
-  String professor;
   int credits;
   int colorValue;
   double courseworkWeight;
@@ -78,12 +78,15 @@ class Course {
   // Weekly Schedule Fields
   String? lectureTime; // Format: "Day HH:mm" e.g., "1 10:00" (1 for Monday)
   String? lectureRoom;
+  String? lectureSection;
   bool hasTutorial;
   String? tutorialTime;
   String? tutorialRoom;
+  String? tutorialSection;
   bool hasLab;
   String? labTime;
   String? labRoom;
+  String? labSection;
 
   // Duration fields (in minutes)
   int lectureDuration;
@@ -94,8 +97,8 @@ class Course {
 
   Course({
     required this.id,
+    this.courseCode,
     required this.name,
-    required this.professor,
     required this.credits,
     required this.colorValue,
     this.courseworkWeight = 60.0,
@@ -104,12 +107,15 @@ class Course {
     this.semesterId,
     this.lectureTime,
     this.lectureRoom,
+    this.lectureSection,
     this.hasTutorial = false,
     this.tutorialTime,
     this.tutorialRoom,
+    this.tutorialSection,
     this.hasLab = false,
     this.labTime,
     this.labRoom,
+    this.labSection,
     this.lectureDuration = 120,
     this.tutorialDuration = 120,
     this.labDuration = 120,
@@ -230,8 +236,8 @@ class Course {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'courseCode': courseCode,
       'name': name,
-      'professor': professor,
       'credits': credits,
       'colorValue': colorValue,
       'courseworkWeight': courseworkWeight,
@@ -240,12 +246,15 @@ class Course {
       'semesterId': semesterId,
       'lectureTime': lectureTime,
       'lectureRoom': lectureRoom,
+      'lectureSection': lectureSection,
       'hasTutorial': hasTutorial,
       'tutorialTime': tutorialTime,
       'tutorialRoom': tutorialRoom,
+      'tutorialSection': tutorialSection,
       'hasLab': hasLab,
       'labTime': labTime,
       'labRoom': labRoom,
+      'labSection': labSection,
       'lectureDuration': lectureDuration,
       'tutorialDuration': tutorialDuration,
       'labDuration': labDuration,
@@ -256,10 +265,10 @@ class Course {
   factory Course.fromMap(Map<String, dynamic> map) {
     return Course(
       id: map['id'],
+      courseCode: map['courseCode'],
       name: map['name'],
-      professor: map['professor'],
-      credits: map['credits'],
-      colorValue: map['colorValue'],
+      credits: map['credits'] ?? 3,
+      colorValue: map['colorValue'] ?? 0xFF2196F3,
       courseworkWeight: (map['courseworkWeight'] ?? 60.0).toDouble(),
       finalWeight: (map['finalWeight'] ?? 40.0).toDouble(),
       assessments: List<Assessment>.from(
@@ -270,12 +279,15 @@ class Course {
       semesterId: map['semesterId'],
       lectureTime: map['lectureTime'],
       lectureRoom: map['lectureRoom'],
+      lectureSection: map['lectureSection'],
       hasTutorial: map['hasTutorial'] ?? false,
       tutorialTime: map['tutorialTime'],
       tutorialRoom: map['tutorialRoom'],
+      tutorialSection: map['tutorialSection'],
       hasLab: map['hasLab'] ?? false,
       labTime: map['labTime'],
       labRoom: map['labRoom'],
+      labSection: map['labSection'],
       lectureDuration: map['lectureDuration'] ?? 120,
       tutorialDuration: map['tutorialDuration'] ?? 120,
       labDuration: map['labDuration'] ?? 120,

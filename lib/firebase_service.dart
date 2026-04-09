@@ -108,13 +108,13 @@ class FirebaseService {
         }
         cloudSem.name = newName;
         String oldId = cloudSem.id;
-        cloudSem.id = DateTime.now().millisecondsSinceEpoch.toString() + 'sem';
+        cloudSem.id = '${DateTime.now().millisecondsSinceEpoch}sem';
         semesterIdMap[oldId] = cloudSem.id;
         mergedSemesters.add(cloudSem);
       } else {
         if (localSemesters.any((ls) => ls.id == cloudSem.id)) {
           String oldId = cloudSem.id;
-          cloudSem.id = DateTime.now().millisecondsSinceEpoch.toString() + 'sem${cloudSem.name}';
+          cloudSem.id = '${DateTime.now().millisecondsSinceEpoch}sem${cloudSem.name}';
           semesterIdMap[oldId] = cloudSem.id;
         }
         mergedSemesters.add(cloudSem);
@@ -140,7 +140,7 @@ class FirebaseService {
         int existingIndex = mergedCourses.indexWhere((lc) => lc.id == cloudCourse.id);
         if (existingIndex != -1) {
           if (mergedCourses[existingIndex].semesterId != cloudCourse.semesterId) {
-             cloudCourse.id = DateTime.now().millisecondsSinceEpoch.toString() + 'crs';
+             cloudCourse.id = '${DateTime.now().millisecondsSinceEpoch}crs';
              mergedCourses.add(cloudCourse);
           } else {
              mergedCourses[existingIndex] = cloudCourse; // Overwrite if same semester and same ID
