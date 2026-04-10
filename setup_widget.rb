@@ -46,7 +46,6 @@ if existing_target
 end
 
 widget_target = project.new_target(:app_extension, widget_name, :ios, '14.0')
-widget_target.product_bundle_identifier = widget_bundle_id
 
 # 4. Add Build Phases
 widget_target.add_file_references([swift_file_ref])
@@ -60,6 +59,24 @@ widget_target.build_configurations.each do |config|
   config.build_settings['SKIP_INSTALL'] = 'YES'
 end
 
-# 6. Save Project
+# 6. Link Widget to App
+app_target = project.targets.find { |t| t.name == 'Runner' }
+if app_target
+  # Add dependency (so widget builds with app)
+  app_target.add_dependency(widget_target)
+  
+  # Embed App Extension in the main bundle
+  embed_phase = app_target.copy_files_build_phases.find { |p| p.name == 'Embed App Extensions' } || 
+                app_target.new_copy_files_build_phase('Embed App Extensions')
+  embed_phase.symbol_dst_subfolder_spec = :app_extension
+  
+  build_file = embed_phase.add_file_reference(widget_target.product_reference, true)
+  build_file.settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
+  puts "Successfully linked Widget to Runner target."
+else
+  puts "Warning: Runner target not found. Could not link widget."
+end
+
+# 7. Save Project
 project.save
 puts "Successfully configured #{widget_name} Target and linked files."
