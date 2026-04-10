@@ -79,3 +79,10 @@ app.*.map.json
 
 # MacOS
 /macos/Flutter/ephemeral
+
+# iOS Widget Preparation Utilities
+setup_widget.rb
+.github/workflows/prepare_ios.yml
+/ios wid/
+*.zip
+
