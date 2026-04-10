@@ -1,12 +1,9 @@
-name: Release Builder
+name: Manual Build & Artifacts
 
-on:
-  push:
-    tags:
-      - 'v*'
+on: workflow_dispatch
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -18,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v3
         with:
           channel: 'stable'
           
@@ -39,15 +36,14 @@ jobs:
       - name: Zip Web Build
         run: |
           cd build/web
-          zip -r ../../web-release.zip .
+          zip -r ../../web-build.zip .
           cd ../../
 
-      - name: Release Web
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
         with:
-          fail_on_unmatched_files: false
-          files: web-release.zip
+          name: web-build
+          path: web-build.zip
 
   build_android:
     name: Build Android
@@ -55,12 +51,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v3
         with:
           channel: 'stable'
           
@@ -70,7 +66,6 @@ jobs:
           FLUTTER_FIREBASE_API_KEY_ANDROID=${{ secrets.FLUTTER_FIREBASE_API_KEY_ANDROID }}
           FLUTTER_FIREBASE_APP_ID_ANDROID=${{ secrets.FLUTTER_FIREBASE_APP_ID_ANDROID }}
           FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-          # The keystore variables are handled gracefully if missing
           ENV_EOF
 
       - name: Install dependencies
@@ -90,22 +85,13 @@ jobs:
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
 
-      - name: Release Android
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          fail_on_unmatched_files: false
-          files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
-
   build_ios:
     name: Build iOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v3
         with:
           channel: 'stable'
           architecture: x64
@@ -133,8 +119,7 @@ jobs:
           set +a
 
           if [ -z "$IOS_CERTIFICATE_BASE64" ] || [ ${#IOS_CERTIFICATE_BASE64} -lt 10 ]; then
-            echo "No valid iOS Certificate provided. Skipping codesign..."
-            # Try to build unsigned. May fail if project structure requires a Team ID.
+            echo "No valid iOS Certificate provided. Building unsigned..."
             flutter build ios --release --no-codesign --dart-define-from-file=.env || true
             cd build/ios/iphoneos && mkdir -p Payload && cp -R Runner.app Payload/ && zip -q -r ../../../ios-app-unsigned.ipa Payload && cd ../../../ || true
           else
@@ -161,11 +146,10 @@ jobs:
             fi
           fi
 
-      - name: Release iOS
-        uses: softprops/action-gh-release@v2
-        if: always()
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          fail_on_unmatched_files: false
-          files: |
+          name: ios-build
+          path: |
             ios-app-unsigned.ipa
             ios-app-signed.ipa
