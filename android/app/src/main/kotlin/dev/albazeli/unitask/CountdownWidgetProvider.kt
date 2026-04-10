@@ -4,16 +4,17 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.widget.RemoteViews
+import android.content.SharedPreferences
 import es.antonborri.home_widget.HomeWidgetProvider
 
 class CountdownWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences
     ) {
         for (appWidgetId in appWidgetIds) {
-            val widgetData = getData(context)
             val views = RemoteViews(context.packageName, R.layout.countdown_widget).apply {
                 
                 val name = widgetData.getString("next_class_name", "No Classes")
