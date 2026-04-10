@@ -56,6 +56,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: _get(const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'), 'FIREBASE_MESSAGING_SENDER_ID'),
     projectId: _get(const String.fromEnvironment('FIREBASE_PROJECT_ID'), 'FIREBASE_PROJECT_ID'),
     storageBucket: _get(const String.fromEnvironment('FIREBASE_STORAGE_BUCKET'), 'FIREBASE_STORAGE_BUCKET'),
-    iosBundleId: 'online.albazly.unitask',
+    iosBundleId: 'dev.albazeli.unitask',
   );
 }

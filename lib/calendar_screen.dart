@@ -19,12 +19,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = GPAUtils.getMalaysiaTime();
   DateTime? _selectedDay;
+  late final ScrollController _scrollController;
+  final bool _showWeekends = true;
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    _scrollController = ScrollController();
     _loadData();
+    // Auto-scroll to current day in the monthly view if on mobile
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToToday();
+    });
+  }
+
+  void _scrollToToday() {
+    // Basic logic to scroll if weekends are hidden or if narrow screen
+    // This is more relevant for weekly view, for monthly we handle it by focusing the day.
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -111,47 +129,57 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       // Calendar Grid
                       Expanded(
-                        child: TableCalendar(
-                          firstDay: DateTime.utc(2020, 1, 1),
-                          lastDay: DateTime.utc(2030, 12, 31),
-                          focusedDay: _focusedDay,
-                          calendarFormat: _calendarFormat,
-                          startingDayOfWeek: StartingDayOfWeek.monday,
-                          headerVisible: false,
-                          daysOfWeekHeight: 40,
-                          rowHeight: dynamicRowHeight, 
-                          calendarStyle: const CalendarStyle(
-                            outsideDaysVisible: true,
-                            defaultTextStyle: TextStyle(color: Colors.white70),
-                            weekendTextStyle: TextStyle(color: Colors.white54),
-                            holidayTextStyle: TextStyle(color: Colors.white),
-                            cellMargin: EdgeInsets.zero,
-                            cellPadding: EdgeInsets.zero,
-                          ),
-                          daysOfWeekStyle: const DaysOfWeekStyle(
-                            weekdayStyle: TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 12),
-                            weekendStyle: TextStyle(color: Colors.white24, fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
-                          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState(() {
-                              _selectedDay = selectedDay;
-                              _focusedDay = focusedDay;
-                            });
-                          },
-                          onPageChanged: (focusedDay) {
-                            setState(() => _focusedDay = focusedDay);
-                          },
-                          calendarBuilders: CalendarBuilders(
-                            defaultBuilder: (context, day, focusedDay) => _buildGridCell(day, isOutside: false),
-                            outsideBuilder: (context, day, focusedDay) => _buildGridCell(day, isOutside: true),
-                            selectedBuilder: (context, day, focusedDay) => _buildGridCell(day, isSelected: true),
-                            todayBuilder: (context, day, focusedDay) => _buildGridCell(day, isToday: true),
-                            markerBuilder: (context, day, events) {
-                              final assessments = _getAssessmentsForDay(day);
-                              if (assessments.isEmpty) return null;
-                              return _buildEventPills(assessments, dynamicRowHeight);
-                            },
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width > 600 ? constraints.maxWidth - 32 : 500, // Force width on mobile to enable scroll
+                            child: TableCalendar(
+                              firstDay: DateTime.utc(2020, 1, 1),
+                              lastDay: DateTime.utc(2030, 12, 31),
+                              focusedDay: _focusedDay,
+                              calendarFormat: _calendarFormat,
+                              startingDayOfWeek: StartingDayOfWeek.monday,
+                              headerVisible: false,
+                              daysOfWeekHeight: 40,
+                              rowHeight: dynamicRowHeight, 
+                              weekendDays: _showWeekends ? const [DateTime.saturday, DateTime.sunday] : const [],
+                              calendarStyle: const CalendarStyle(
+                                outsideDaysVisible: true,
+                                defaultTextStyle: TextStyle(color: Colors.white70),
+                                weekendTextStyle: TextStyle(color: Colors.white54),
+                                holidayTextStyle: TextStyle(color: Colors.white),
+                                cellMargin: EdgeInsets.zero,
+                                cellPadding: EdgeInsets.zero,
+                              ),
+                              daysOfWeekStyle: const DaysOfWeekStyle(
+                                weekdayStyle: TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 12),
+                                weekendStyle: TextStyle(color: Colors.white24, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                              onDaySelected: (selectedDay, focusedDay) {
+                                setState(() {
+                                  _selectedDay = selectedDay;
+                                  _focusedDay = focusedDay;
+                                });
+                                _showDayDetails(selectedDay);
+                              },
+                              onPageChanged: (focusedDay) {
+                                setState(() => _focusedDay = focusedDay);
+                              },
+                              calendarBuilders: CalendarBuilders(
+                                defaultBuilder: (context, day, focusedDay) => _buildGridCell(day, isOutside: false),
+                                outsideBuilder: (context, day, focusedDay) => _buildGridCell(day, isOutside: true),
+                                selectedBuilder: (context, day, focusedDay) => _buildGridCell(day, isSelected: true),
+                                todayBuilder: (context, day, focusedDay) => _buildGridCell(day, isToday: true),
+                                markerBuilder: (context, day, events) {
+                                  final assessments = _getAssessmentsForDay(day);
+                                  if (assessments.isEmpty) return null;
+                                  return _buildEventPills(assessments, dynamicRowHeight);
+                                },
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -160,6 +188,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 },
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDayDetails(DateTime day) {
+    final assessments = _getAssessmentsForDay(day);
+    if (assessments.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(DateFormat('EEEE, MMM d').format(day), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ...assessments.map((a) {
+              final course = _courses.firstWhere((c) => c.assessments.any((as) => as.id == a.id));
+              return ListTile(
+                leading: CircleAvatar(backgroundColor: course.color, radius: 4),
+                title: Text(a.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(course.name),
+                trailing: Text('${a.weight.toStringAsFixed(0)}%', style: TextStyle(color: course.color, fontWeight: FontWeight.bold)),
+              );
+            }),
+            const SizedBox(height: 16),
           ],
         ),
       ),

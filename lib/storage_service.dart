@@ -4,6 +4,7 @@ import 'task_model.dart';
 import 'course_model.dart';
 import 'note_model.dart';
 import 'semester_model.dart';
+import 'widget_service.dart';
 
 /// Service responsible for persistent data storage using SharedPreferences.
 ///
@@ -42,6 +43,7 @@ class StorageService {
     } else {
       await prefs.setString(_activeSemesterKey, id);
     }
+    await WidgetService.updateNextClassWidget();
   }
 
   static Future<String?> loadActiveSemesterId() async {
@@ -85,6 +87,7 @@ class StorageService {
     final List<String> encodedCourses =
         courses.map((course) => jsonEncode(course.toMap())).toList();
     await prefs.setStringList(_coursesKey, encodedCourses);
+    await WidgetService.updateNextClassWidget();
   }
 
   /// Loads the list of [Course] objects from local storage.

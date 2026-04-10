@@ -1,0 +1,24 @@
+name: Prepare iOS Widget Files
+on: [push]
+
+jobs:
+  modify-project:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install xcodeproj
+        run: gem install xcodeproj
+
+      - name: Run Ruby Script
+        run: ruby setup_widget.rb
+
+      - name: Archive Project Files
+        run: |
+          zip -r ios_updated.zip ios/
+
+      - name: Upload Updated iOS Folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: updated-ios-project
+          path: ios_updated.zip

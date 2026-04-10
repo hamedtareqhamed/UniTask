@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marquee/marquee.dart';
 import 'course_model.dart';
 import 'storage_service.dart';
 
@@ -42,8 +43,8 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
       return;
     }
 
-    int minH = 8; // Default start at 8
-    int maxH = 20; // Default end at 8 PM
+    int minH = 24; 
+    int maxH = 0;
     Set<int> days = {};
 
     for (var course in _courses) {
@@ -68,9 +69,15 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
       }
     }
 
-    _startHour = minH;
-    _endHour = maxH;
-    _activeDays = days.isEmpty ? [1, 2, 3, 4, 5] : (days.toList()..sort());
+    if (days.isEmpty) {
+      _startHour = 8;
+      _endHour = 18;
+      _activeDays = [1, 2, 3, 4, 5];
+    } else {
+      _startHour = minH;
+      _endHour = maxH;
+      _activeDays = days.toList()..sort();
+    }
   }
 
   void _scanTime(String? timeStr, int duration, Function(int day, int hour, int endHour) onMatch) {
@@ -105,6 +112,7 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
           const double timeColumnWidth = 55.0;
           const double headerHeight = 35.0;
           final double availableHeight = constraints.maxHeight - 24; 
+          // Reverted row height to fit the screen without scroll
           final double rowHeight = (availableHeight - headerHeight) / totalHours;
           final double dayWidth = (constraints.maxWidth - 32 - timeColumnWidth) / totalDays;
 
@@ -173,6 +181,86 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
     );
   }
 
+  void _showCourseDetails(Course course, String type, String? room, String? section, int duration, int hour) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: course.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                  child: Icon(Icons.class_, color: course.color),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(course.courseCode ?? 'N/A', style: TextStyle(color: course.color, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      Text(course.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 32, color: Colors.white10),
+            _buildDetailRow(Icons.type_specimen, 'Session Type', '$type ${section != null ? "($section)" : ""}'),
+            _buildDetailRow(Icons.room, 'Location', room ?? 'TBA'),
+            _buildDetailRow(Icons.access_time, 'Schedule', '${_formatHour(hour)} ($duration mins)'),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: course.color,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.white38),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatHour(int hour) {
     if (hour == 0) return '12 AM';
     if (hour == 12) return '12 PM';
@@ -216,71 +304,100 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
       typeLabel += ' - $sectionCode';
     }
 
-    String displayTitle = (course.courseCode != null && course.courseCode!.isNotEmpty) 
-        ? course.courseCode! 
-        : course.name;
-
     return Positioned(
       top: top,
       left: 1,
       right: 1,
       height: height - 1, 
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: course.color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-          border: Border(left: BorderSide(color: course.color, width: 4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        onTap: () => _showCourseDetails(course, type, room, sectionCode, durationMinutes, hour),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: course.color.withValues(alpha: 0.4), // Darker but more saturated
+            borderRadius: BorderRadius.circular(4),
+            border: Border(left: BorderSide(color: Colors.white, width: 2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Combined Course Code + Session Type on top
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
                     child: Text(
-                      displayTitle, 
-                      style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold, color: course.color),
+                      course.courseCode ?? '',
+                      style: TextStyle(fontSize: subSize * 0.9, fontWeight: FontWeight.bold, color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: course.color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: course.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      typeLabel,
+                      style: TextStyle(fontSize: subSize * 0.9, fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
                   ),
-                  child: Text(
-                    typeLabel,
-                    style: TextStyle(fontSize: subSize * 0.8, fontWeight: FontWeight.w900, color: course.color),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    room ?? 'TBA', 
-                    style: TextStyle(fontSize: subSize, color: course.color.withValues(alpha: 0.8), fontWeight: FontWeight.w500), 
-                    overflow: TextOverflow.ellipsis
-                  ),
-                ),
-                Text(
-                  _formatHour(hour), 
-                  style: TextStyle(fontSize: subSize, fontWeight: FontWeight.bold, color: course.color.withValues(alpha: 0.7)),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 1),
+              // Full name below them (using marquee if too long)
+              SizedBox(
+                height: titleSize * 0.8,
+                child: _buildMarqueeIfNeeded(course.name, titleSize * 0.7, Colors.white, false),
+              ),
+              const Spacer(flex: 1),
+              // Room Code line
+              SizedBox(
+                height: subSize * 1.2,
+                child: _buildMarqueeIfNeeded(room ?? 'TBA', subSize, Colors.white, false),
+              ),
+              const SizedBox(height: 1),
+              // Time line
+              Text(
+                _formatHour(hour), 
+                style: TextStyle(fontSize: subSize, fontWeight: FontWeight.bold, color: Colors.white.withValues(alpha: 0.9)),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMarqueeIfNeeded(String text, double fontSize, Color color, bool bold) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textStyle = TextStyle(fontSize: fontSize, fontWeight: bold ? FontWeight.bold : FontWeight.w500, color: color);
+        final span = TextSpan(text: text, style: textStyle);
+        final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+        tp.layout();
+
+        if (tp.width > constraints.maxWidth) {
+          return Marquee(
+            text: text,
+            style: textStyle,
+            scrollAxis: Axis.horizontal,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            blankSpace: 20.0,
+            velocity: 30.0,
+            pauseAfterRound: const Duration(seconds: 1),
+            startPadding: 0.0,
+            accelerationDuration: const Duration(seconds: 1),
+            accelerationCurve: Curves.linear,
+            decelerationDuration: const Duration(milliseconds: 500),
+            decelerationCurve: Curves.easeOut,
+          );
+        } else {
+          return Text(text, style: textStyle, overflow: TextOverflow.ellipsis);
+        }
+      },
     );
   }
 }
