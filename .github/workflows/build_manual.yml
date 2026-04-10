@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Flutter
-        uses: subosito/flutter-action@v3
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           
@@ -56,7 +56,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
       - name: Setup Flutter
-        uses: subosito/flutter-action@v3
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Flutter
-        uses: subosito/flutter-action@v3
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           architecture: x64
@@ -112,7 +112,6 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS IPA
-        continue-on-error: true
         run: |
           set -a
           source .env
@@ -120,8 +119,20 @@ jobs:
 
           if [ -z "$IOS_CERTIFICATE_BASE64" ] || [ ${#IOS_CERTIFICATE_BASE64} -lt 10 ]; then
             echo "No valid iOS Certificate provided. Building unsigned..."
-            flutter build ios --release --no-codesign --dart-define-from-file=.env || true
-            cd build/ios/iphoneos && mkdir -p Payload && cp -R Runner.app Payload/ && zip -q -r ../../../ios-app-unsigned.ipa Payload && cd ../../../ || true
+            flutter build ios --release --no-codesign --dart-define-from-file=.env
+            
+            APP_PATH="build/ios/iphoneos/Runner.app"
+            if [ -d "$APP_PATH" ]; then
+              cd build/ios/iphoneos
+              mkdir -p Payload
+              cp -R Runner.app Payload/
+              zip -q -r ../../../ios-app-unsigned.ipa Payload
+              cd ../../../
+              echo "Unsigned IPA created: ios-app-unsigned.ipa"
+            else
+              echo "Error: Runner.app not found!"
+              exit 1
+            fi
           else
             CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
             PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
@@ -134,15 +145,18 @@ jobs:
             security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
             security unlock-keychain -p "$IOS_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-            security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH || true
+            security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
             security list-keychain -d user -s $KEYCHAIN_PATH
 
             mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
             cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
             
-            flutter build ipa --release --dart-define-from-file=.env || true
+            flutter build ipa --release --dart-define-from-file=.env
             if [ -d "build/ios/ipa" ]; then
-              cp build/ios/ipa/*.ipa ios-app-signed.ipa || true
+              cp build/ios/ipa/*.ipa ios-app-signed.ipa
+            else
+               echo "Error: IPA folder not found!"
+               exit 1
             fi
           fi
 
