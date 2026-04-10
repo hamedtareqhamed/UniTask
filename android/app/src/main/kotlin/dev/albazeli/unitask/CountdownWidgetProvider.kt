@@ -4,7 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetProgressProvider
+import es.antonborri.home_widget.HomeWidgetProvider
 
 class CountdownWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(
@@ -13,7 +13,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         for (appWidgetId in appWidgetIds) {
-            val widgetData = HomeWidgetProgressProvider.getData(context)
+            val widgetData = HomeWidgetProvider.getData(context)
             val views = RemoteViews(context.packageName, R.layout.countdown_widget).apply {
                 
                 val name = widgetData.getString("next_class_name", "No Classes")
