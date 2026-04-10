@@ -123,9 +123,7 @@ jobs:
           ENV_EOF
 
       - name: Install dependencies
-        run: |
-          flutter pub get
-          flutter precache --ios
+        run:  flutter pub get
       - name: Build iOS IPA
         run: |
           set -a
