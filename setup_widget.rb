@@ -68,7 +68,7 @@ if app_target
   # Embed App Extension in the main bundle
   embed_phase = app_target.copy_files_build_phases.find { |p| p.name == 'Embed App Extensions' } || 
                 app_target.new_copy_files_build_phase('Embed App Extensions')
-  embed_phase.symbol_dst_subfolder_spec = :app_extension
+  embed_phase.dst_subfolder_spec = '13' # 13 corresponds to App Extensions (PlugIns) folder
   
   build_file = embed_phase.add_file_reference(widget_target.product_reference, true)
   build_file.settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
