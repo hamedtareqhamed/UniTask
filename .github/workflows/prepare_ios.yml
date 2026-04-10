@@ -1,11 +1,11 @@
 name: Prepare iOS Widget Files
-on: [push]
+on: workflow_dispatch
 
 jobs:
   modify-project:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install xcodeproj
         run: gem install xcodeproj
@@ -15,10 +15,13 @@ jobs:
 
       - name: Archive Project Files
         run: |
+          if [ -d "ios/WidgetExtension" ]; then
+            echo "Environment prepared."
+          fi
           zip -r ios_updated.zip ios/
 
       - name: Upload Updated iOS Folder
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: updated-ios-project
           path: ios_updated.zip
