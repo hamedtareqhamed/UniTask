@@ -17,17 +17,17 @@ def flutter_root
   end
 
   File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/\AFLUTTER_ROOT=(.*)\z/)
-    return matches[1].strip if matches
+    if line =~ /FLUTTER_ROOT=(.*)/
+      return $1.strip
+    end
   end
-  raise "FLUTTER_ROOT not found in Generated.xcconfig. Try deleting Generated.xcconfig and regenerate it by running flutter pub get."
+  raise "FLUTTER_ROOT not found in Generated.xcconfig."
 end
 
 podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), File.dirname(__FILE__))
 if File.exist?(podhelper_path)
   require podhelper_path
 else
-  # Fallback to FLUTTER_ROOT from settings if local file is missing
   require File.expand_path('packages/flutter_tools/bin/podhelper.rb', flutter_root)
 end
 
