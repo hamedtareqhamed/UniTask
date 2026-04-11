@@ -110,6 +110,7 @@
 				CA48643038A918E637E5CF30 /* WidgetExtension.entitlements */,
 			);
 			name = WidgetExtension;
+			path = WidgetExtension;
 			sourceTree = "<group>";
 		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
