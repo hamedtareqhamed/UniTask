@@ -160,7 +160,7 @@ jobs:
               cd build/ios/iphoneos
               mkdir -p Payload
               cp -RP Runner.app Payload/
-              zip -qy ../../../ios-app-unsigned.ipa Payload
+              zip -qry ../../../ios-app-unsigned.ipa Payload
               cd ../../../
               echo "Unsigned IPA created: ios-app-unsigned.ipa"
             else
