@@ -4,6 +4,23 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      build_web:
+        description: 'Build Web'
+        required: true
+        type: boolean
+        default: true
+      build_android:
+        description: 'Build Android'
+        required: true
+        type: boolean
+        default: true
+      build_ios:
+        description: 'Build iOS'
+        required: true
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -15,6 +32,7 @@ jobs:
   build_web:
     name: Build Web
     runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_web == true)
     steps:
       - uses: actions/checkout@v4
       - name: Setup Flutter
@@ -52,6 +70,7 @@ jobs:
   build_android:
     name: Build Android
     runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_android == true)
     steps:
       - uses: actions/checkout@v4
       - name: Setup Java
@@ -102,6 +121,7 @@ jobs:
   build_ios:
     name: Build iOS
     runs-on: macos-latest
+    if: (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_ios == true)
     steps:
       - uses: actions/checkout@v4
       - name: Setup Flutter
