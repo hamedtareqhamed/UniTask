@@ -7,16 +7,18 @@ import 'package:flutter/foundation.dart';
 class WidgetService {
   static const String _groupId = 'group.dev.albazeli.unitask';
   static const String _androidWidgetName = 'CountdownWidgetProvider';
-  static const String _iosWidgetName = 'ClassWidget';
+  static const String _iosWidgetName = 'WidgetExtension';
 
-  /// Updates the home screen widget with the next class info.
-  static Future<void> updateNextClassWidget() async {
-    if (kIsWeb) return; // home_widget not supported on web
+  /// Updates the home screen widget with the next class info and top 5 tasks.
+  static Future<void> updateAllWidgets() async {
+    if (kIsWeb) return;
     try {
       await HomeWidget.setAppGroupId(_groupId);
       final courses = await StorageService.loadCourses();
       final activeId = await StorageService.loadActiveSemesterId();
       final now = GPAUtils.getMalaysiaTime();
+      
+      // --- PART 1: NEXT CLASS ---
       final currentDay = now.weekday;
       final currentTimeMinutes = now.hour * 60 + now.minute;
 
@@ -34,60 +36,116 @@ class WidgetService {
         }
       }
 
-      if (allSlots.isEmpty) {
+      if (allSlots.isNotEmpty) {
+        allSlots.sort((a, b) {
+          int diffA = (a.day - currentDay) * 1440 + (a.timeMinutes - currentTimeMinutes);
+          if (diffA <= 0) diffA += 7 * 1440;
+          int diffB = (b.day - currentDay) * 1440 + (b.timeMinutes - currentTimeMinutes);
+          if (diffB <= 0) diffB += 7 * 1440;
+          return diffA.compareTo(diffB);
+        });
+
+        final next = allSlots.first;
+        final course = next.course;
+
+        await HomeWidget.saveWidgetData('next_class_name', course.name);
+        await HomeWidget.saveWidgetData('next_class_code', course.courseCode ?? '');
+        await HomeWidget.saveWidgetData('next_class_type', next.type);
+        await HomeWidget.saveWidgetData('next_class_room', next.room ?? 'TBA');
+        await HomeWidget.saveWidgetData('next_class_time', next.timeStr);
+        
+        int totalMinutes = (next.day - currentDay) * 1440 + (next.timeMinutes - currentTimeMinutes);
+        if (totalMinutes <= 0) totalMinutes += 7 * 1440;
+        await HomeWidget.saveWidgetData('next_class_countdown', _formatCountdown(totalMinutes));
+      } else {
         await HomeWidget.saveWidgetData('next_class_name', 'No Classes');
         await HomeWidget.saveWidgetData('next_class_time', '');
-        await HomeWidget.updateWidget(
-          name: _androidWidgetName,
-          iOSName: _iosWidgetName,
-        );
-        return;
       }
 
-      // Find next class
-      allSlots.sort((a, b) {
-        int diffA = (a.day - currentDay) * 1440 + (a.timeMinutes - currentTimeMinutes);
-        if (diffA <= 0) diffA += 7 * 1440; // Skip already passed classes today
-        int diffB = (b.day - currentDay) * 1440 + (b.timeMinutes - currentTimeMinutes);
-        if (diffB <= 0) diffB += 7 * 1440;
-        return diffA.compareTo(diffB);
-      });
+      // --- PART 2: UPCOMING TASKS ---
+      List<_WidgetTask> allTasks = [];
+      for (var course in courses) {
+        if (course.semesterId != activeId) continue;
+        for (var a in course.assessments) {
+          if (!a.isCompleted && a.deadline != null) {
+            allTasks.add(_WidgetTask(
+              title: a.title,
+              subject: course.name,
+              code: course.courseCode ?? '',
+              deadline: a.deadline!,
+            ));
+          }
+        }
+      }
 
-      final next = allSlots.first;
-      final course = next.course;
+      allTasks.sort((a, b) => a.deadline.compareTo(b.deadline));
+      
+      if (allTasks.isNotEmpty) {
+        final nextTask = allTasks.first;
+        final diff = nextTask.deadline.difference(now);
+        
+        await HomeWidget.saveWidgetData('next_task_title', nextTask.title);
+        await HomeWidget.saveWidgetData('next_task_subject', nextTask.subject);
+        await HomeWidget.saveWidgetData('next_task_code', nextTask.code);
+        await HomeWidget.saveWidgetData('next_task_countdown', _formatDuration(diff));
 
-      // Save data for widgets
-      await HomeWidget.saveWidgetData('next_class_name', course.name);
-      await HomeWidget.saveWidgetData('next_class_code', course.courseCode ?? '');
-      await HomeWidget.saveWidgetData('next_class_type', next.type);
-      await HomeWidget.saveWidgetData('next_class_section', next.section ?? '');
-      await HomeWidget.saveWidgetData('next_class_room', next.room ?? 'TBA');
-      await HomeWidget.saveWidgetData('next_class_time', next.timeStr);
-      
-      // Calculate countdown string (simplified for widget)
-      int totalMinutes = (next.day - currentDay) * 1440 + (next.timeMinutes - currentTimeMinutes);
-      if (totalMinutes <= 0) totalMinutes += 7 * 1440;
-      
-      String countdown = '';
-      if (totalMinutes > 1440) {
-        countdown = '${(totalMinutes / 1440).floor()} days';
-      } else if (totalMinutes > 60) {
-        countdown = '${(totalMinutes / 60).floor()} hours';
+        // Top 5 Tasks (for large widget)
+        final top5Count = allTasks.length > 5 ? 5 : allTasks.length;
+        for (int i = 0; i < 5; i++) {
+          if (i < top5Count) {
+            final t = allTasks[i];
+            await HomeWidget.saveWidgetData('task_${i}_title', t.title);
+            await HomeWidget.saveWidgetData('task_${i}_subject', t.subject);
+            await HomeWidget.saveWidgetData('task_${i}_code', t.code);
+            await HomeWidget.saveWidgetData('task_${i}_time', _formatDateShort(t.deadline));
+          } else {
+            await HomeWidget.saveWidgetData('task_${i}_title', '');
+          }
+        }
+        await HomeWidget.saveWidgetData('task_count', top5Count);
       } else {
-        countdown = '$totalMinutes mins';
+        await HomeWidget.saveWidgetData('next_task_title', 'No Tasks');
+        await HomeWidget.saveWidgetData('task_count', 0);
       }
-      await HomeWidget.saveWidgetData('next_class_countdown', countdown);
 
       // Trigger update
       await HomeWidget.updateWidget(
         name: _androidWidgetName,
-        androidName: _androidWidgetName,
         iOSName: _iosWidgetName,
       );
     } catch (e) {
       debugPrint('Error updating widget: $e');
     }
   }
+
+  static String _formatCountdown(int totalMinutes) {
+    if (totalMinutes > 1440) return '${(totalMinutes / 1440).floor()} days';
+    if (totalMinutes > 60) return '${(totalMinutes / 60).floor()} hours';
+    return '$totalMinutes mins';
+  }
+
+  static String _formatDuration(Duration d) {
+    if (d.inDays > 0) return '${d.inDays} days';
+    if (d.inHours > 0) return '${d.inHours} hours';
+    if (d.inMinutes > 0) return '${d.inMinutes} mins';
+    return 'Now';
+  }
+
+  static String _formatDateShort(DateTime d) {
+    return '${d.day}/${d.month} ${d.hour}:${d.minute.toString().padLeft(2, '0')}';
+  }
+
+  @Deprecated('Use updateAllWidgets')
+  static Future<void> updateNextClassWidget() => updateAllWidgets();
+}
+
+class _WidgetTask {
+  final String title;
+  final String subject;
+  final String code;
+  final DateTime deadline;
+
+  _WidgetTask({required this.title, required this.subject, required this.code, required this.deadline});
 }
 
 class _Slot {

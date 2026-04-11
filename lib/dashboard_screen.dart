@@ -114,7 +114,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('UniTask Dashboard'),
-        actions: [IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh))],
+        actions: [
+          IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskDialog,
