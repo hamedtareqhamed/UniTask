@@ -52,8 +52,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- Replace this with your REVERSED_CLIENT_ID from GoogleService-Info.plist -->
-				<string>com.googleusercontent.apps.1045468371720-klnj4p0dp6u7ipsrk8nn6flmei7477mt</string>
+				<!-- REVERSED_CLIENT_ID for dev.albazeli.unitask -->
+				<string>com.googleusercontent.apps.1045468371720-fg8bdp9igv7889621sbhpgh0i11vpi8q</string>
 			</array>
 		</dict>
 	</array>

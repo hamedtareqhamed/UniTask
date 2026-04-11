@@ -7,11 +7,16 @@ import 'task_model.dart';
 import 'note_model.dart';
 import 'semester_model.dart';
 
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class FirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: '1045468371720-klnj4p0dp6u7ipsrk8nn6flmei7477mt.apps.googleusercontent.com',
+    clientId: kIsWeb 
+        ? '1045468371720-klnj4p0dp6u7ipsrk8nn6flmei7477mt.apps.googleusercontent.com' 
+        : (Platform.isIOS ? '1045468371720-fg8bdp9igv7889621sbhpgh0i11vpi8q.apps.googleusercontent.com' : null),
   );
 
   User? get currentUser => _auth.currentUser;
