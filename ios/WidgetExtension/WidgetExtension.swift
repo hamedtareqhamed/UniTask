@@ -83,7 +83,7 @@ struct ClassWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("NEXT CLASS")
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.cyan)
+                .foregroundColor(Color(red: 0, green: 0.8, blue: 1))
             
             Text(entry.title)
                 .font(.headline)
@@ -100,7 +100,7 @@ struct ClassWidgetView: View {
                 Label(entry.detail1, systemImage: "mappin.and.ellipse")
                 Spacer()
                 Text(entry.countdown)
-                    .foregroundColor(.cyan)
+                    .foregroundColor(Color(red: 0, green: 0.8, blue: 1))
                     .bold()
             }
             .font(.system(size: 12))
