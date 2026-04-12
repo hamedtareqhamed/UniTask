@@ -109,10 +109,12 @@ class WidgetService {
       }
 
       // Trigger update
+      debugPrint('WidgetService: Attempting to update widgets (Android: $_androidWidgetName, iOS: $_iosWidgetName)');
       await HomeWidget.updateWidget(
         name: _androidWidgetName,
         iOSName: _iosWidgetName,
       );
+      debugPrint('WidgetService: Widget update call successful');
     } catch (e) {
       debugPrint('Error updating widget: $e');
     }
