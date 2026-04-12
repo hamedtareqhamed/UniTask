@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'widget_service.dart';
 import 'task_model.dart';
 import 'storage_service.dart';
 import 'course_model.dart';
@@ -36,6 +37,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _allCourses = courses;
       _activeSemesterId = activeId;
     });
+    // Sync to widgets
+    WidgetService.updateAllWidgets();
   }
 
   @override

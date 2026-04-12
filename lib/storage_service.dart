@@ -23,6 +23,7 @@ class StorageService {
     final List<String> encoded =
         semesters.map((s) => jsonEncode(s.toMap())).toList();
     await prefs.setStringList(_semestersKey, encoded);
+    await WidgetService.updateAllWidgets();
   }
 
   static Future<List<Semester>> loadSemesters() async {
@@ -59,6 +60,7 @@ class StorageService {
     final List<String> encodedTasks =
         tasks.map((task) => jsonEncode(task.toMap())).toList();
     await prefs.setStringList(_tasksKey, encodedTasks);
+    await WidgetService.updateAllWidgets();
   }
 
   /// Loads the list of [Task] objects from local storage.
@@ -87,7 +89,7 @@ class StorageService {
     final List<String> encodedCourses =
         courses.map((course) => jsonEncode(course.toMap())).toList();
     await prefs.setStringList(_coursesKey, encodedCourses);
-    await WidgetService.updateNextClassWidget();
+    await WidgetService.updateAllWidgets();
   }
 
   /// Loads the list of [Course] objects from local storage.
