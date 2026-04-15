@@ -89,8 +89,11 @@ jobs:
           FLUTTER_FIREBASE_API_KEY_ANDROID=${{ secrets.FLUTTER_FIREBASE_API_KEY_ANDROID }}
           FLUTTER_FIREBASE_APP_ID_ANDROID=${{ secrets.FLUTTER_FIREBASE_APP_ID_ANDROID }}
           FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-          # The keystore variables are handled gracefully if missing
           ENV_EOF
+
+      - name: Inject Firebase Config
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
       - name: Install dependencies
         run: flutter pub get
@@ -141,6 +144,10 @@ jobs:
           IOS_PROVISIONING_PROFILE_BASE64=${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
           IOS_KEYCHAIN_PASSWORD=${{ secrets.IOS_KEYCHAIN_PASSWORD }}
           ENV_EOF
+
+      - name: Inject Firebase Config
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_INFO_PLIST }}" > ios/Runner/GoogleService-Info.plist
 
       - name: Install dependencies
         run:  flutter pub get
