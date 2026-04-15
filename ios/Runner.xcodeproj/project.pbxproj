@@ -233,6 +233,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 277C8F2BF785527167D3A42B /* Build configuration list for PBXNativeTarget "WidgetExtension" */;
 			buildPhases = (
+				EAA1A21D145C0509BA6EC02D /* Run Script */,
 				25F72DE146CB43BEA3F1ACFA /* Sources */,
 				A227A8D6AF7AD4C89CDF4B6C /* Frameworks */,
 				ABD5E3E460C3E5F776790C7A /* Resources */,
@@ -337,6 +338,20 @@
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		EAA1A21D145C0509BA6EC02D /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -734,15 +749,6 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-framework",
-					"Flutter",
-				);
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Flutter",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.albazeli.unitask.WidgetExtension;
 				PRODUCT_NAME = WidgetExtension;
 				SDKROOT = iphoneos;
@@ -766,15 +772,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
-				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-framework",
-					"Flutter",
-				);
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Flutter",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.albazeli.unitask.WidgetExtension;
 				PRODUCT_NAME = WidgetExtension;
