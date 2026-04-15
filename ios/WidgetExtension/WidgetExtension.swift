@@ -1,277 +1,208 @@
 import WidgetKit
 import SwiftUI
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let title: String
-    let subtitle: String
-    let detail1: String
-    let detail2: String
-    let countdown: String
-    let tasks: [TaskEntry]
-}
+// MARK: - Models
 
-struct TaskEntry: Identifiable {
-    let id = UUID()
+struct TaskEntryData: Identifiable, Codable {
+    let id: String
     let title: String
+    let subject: String
     let time: String
     let weight: String
     let type: String
 }
 
-struct BaseProvider: TimelineProvider {
-    let widgetKind: String
+struct SimpleEntry: TimelineEntry {
+    let date: Date
+    let nextClass: ClassData?
+    let nextTask: TaskEntryData?
+    let recentTasks: [TaskEntryData]
+    
+    struct ClassData: Codable {
+        let name: String
+        let code: String
+        let room: String
+        let type: String
+        let countdown: String
+    }
+}
 
+// MARK: - Provider
+
+struct Provider: TimelineProvider {
+    let suiteName = "group.dev.albazeli.unitask"
+    
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), title: "Loading...", subtitle: "", detail1: "", detail2: "", countdown: "", tasks: [])
+        SimpleEntry(date: Date(), nextClass: nil, nextTask: nil, recentTasks: [])
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), title: "Sample", subtitle: "Subject", detail1: "A-101", detail2: "LEC", countdown: "2h", tasks: [])
+        let entry = SimpleEntry(
+            date: Date(),
+            nextClass: SimpleEntry.ClassData(name: "Data Structures", code: "CS201", room: "Lab 4", type: "LAB", countdown: "2h 15m"),
+            nextTask: TaskEntryData(id: "1", title: "Project Proposal", subject: "Software Engineering", time: "11:59 PM", weight: "15%", type: "ASSESSMENT"),
+            recentTasks: []
+        )
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> ()) {
-        let userDefaults = UserDefaults(suiteName: "group.dev.albazeli.unitask")
-        var entries: [SimpleEntry] = []
-        
+        let userDefaults = UserDefaults(suiteName: suiteName)
         let now = Date()
         
-        if widgetKind == "ClassWidget" {
-            let entry = SimpleEntry(
-                date: now,
-                title: userDefaults?.string(forKey: "next_class_name") ?? "No Classes",
-                subtitle: userDefaults?.string(forKey: "next_class_code") ?? "",
-                detail1: userDefaults?.string(forKey: "next_class_room") ?? "TBA",
-                detail2: userDefaults?.string(forKey: "next_class_type") ?? "",
-                countdown: userDefaults?.string(forKey: "next_class_countdown") ?? "",
-                tasks: []
-            )
-            entries.append(entry)
-        } else if widgetKind == "TaskWidget" {
-            var tasks: [TaskEntry] = []
-            let count = userDefaults?.integer(forKey: "task_count") ?? 0
-            for i in 0..<min(count, 5) {
-                tasks.append(TaskEntry(
-                    title: userDefaults?.string(forKey: "task_\(i)_title") ?? "",
-                    time: userDefaults?.string(forKey: "task_\(i)_time") ?? "",
-                    weight: userDefaults?.string(forKey: "task_\(i)_weight") ?? "",
-                    type: userDefaults?.string(forKey: "task_\(i)_type") ?? ""
-                ))
-            }
-            
-            let entry = SimpleEntry(
-                date: now,
-                title: userDefaults?.string(forKey: "next_task_title") ?? "No Tasks",
-                subtitle: userDefaults?.string(forKey: "next_task_subject") ?? "",
-                detail1: userDefaults?.string(forKey: "next_task_code") ?? "",
-                detail2: "",
-                countdown: userDefaults?.string(forKey: "next_task_countdown") ?? "",
-                tasks: tasks
-            )
-            entries.append(entry)
+        // Fetch Class Data
+        let nextClass = SimpleEntry.ClassData(
+            name: userDefaults?.string(forKey: "next_class_name") ?? "",
+            code: userDefaults?.string(forKey: "next_class_code") ?? "",
+            room: userDefaults?.string(forKey: "next_class_room") ?? "",
+            type: userDefaults?.string(forKey: "next_class_type") ?? "",
+            countdown: userDefaults?.string(forKey: "next_class_countdown") ?? ""
+        )
+        
+        // Fetch Task Data
+        let nextTask = TaskEntryData(
+            id: "primary",
+            title: userDefaults?.string(forKey: "next_task_title") ?? "",
+            subject: userDefaults?.string(forKey: "next_task_subject") ?? "",
+            time: userDefaults?.string(forKey: "next_task_time") ?? "",
+            weight: userDefaults?.string(forKey: "next_task_weight") ?? "",
+            type: userDefaults?.string(forKey: "next_task_type") ?? ""
+        )
+        
+        // Fetch Recent Tasks
+        var recentTasks: [TaskEntryData] = []
+        let count = userDefaults?.integer(forKey: "task_count") ?? 0
+        for i in 0..<min(count, 3) {
+            recentTasks.append(TaskEntryData(
+                id: "\(i)",
+                title: userDefaults?.string(forKey: "task_\(i)_title") ?? "",
+                subject: userDefaults?.string(forKey: "task_\(i)_subject") ?? "",
+                time: userDefaults?.string(forKey: "task_\(i)_time") ?? "",
+                weight: userDefaults?.string(forKey: "task_\(i)_weight") ?? "",
+                type: userDefaults?.string(forKey: "task_\(i)_type") ?? ""
+            ))
         }
 
-        let timeline = Timeline(entries: entries, policy: .atEnd)
+        let entry = SimpleEntry(
+            date: now,
+            nextClass: nextClass.name.isEmpty ? nil : nextClass,
+            nextTask: nextTask.title.isEmpty ? nil : nextTask,
+            recentTasks: recentTasks
+        )
+
+        let timeline = Timeline(entries: [entry], policy: .atEnd)
         completion(timeline)
     }
 }
 
-extension View {
-    func widgetBackground(_ color: Color) -> some View {
-        if #available(iOS 17.0, *) {
-            return self.containerBackground(for: .widget) { color }
-        } else {
-            return self.background(color)
-        }
-    }
-}
-
-// --- Views ---
+// MARK: - Views
 
 struct ClassWidgetView: View {
     var entry: SimpleEntry
-    @Environment(\.widgetFamily) var family
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("NEXT CLASS")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(Color(red: 0, green: 0.8, blue: 1))
+            Text("NEXT CLASS").font(.system(size: 10, weight: .black)).foregroundColor(.blue).opacity(0.8)
             
-            Text(entry.title)
-                .font(.headline)
-                .bold()
-                .lineLimit(1)
-            
-            Text(entry.subtitle)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-
-            Spacer()
-            
-            HStack {
-                Label(entry.detail1, systemImage: "mappin.and.ellipse")
+            if let data = entry.nextClass {
+                Text(data.name).font(.system(size: 16, weight: .bold)).lineLimit(1)
+                Text("\(data.code) • \(data.type)").font(.system(size: 12)).foregroundColor(.secondary)
+                
                 Spacer()
-                Text(entry.countdown)
-                    .foregroundColor(Color(red: 0, green: 0.8, blue: 1))
-                    .bold()
+                
+                HStack {
+                    Label(data.room, systemImage: "mappin.circle.fill")
+                    Spacer()
+                    Text(data.countdown).bold().foregroundColor(.blue)
+                }
+                .font(.system(size: 12))
+            } else {
+                Text("No Classes Scheduled").font(.system(size: 14)).foregroundColor(.secondary).padding(.top, 4)
+                Spacer()
             }
-            .font(.system(size: 12))
         }
-        .widgetBackground(Color.black)
+        .containerBackground(.background, for: .widget)
     }
 }
 
-struct TaskSmallWidgetView: View {
+struct TaskWidgetView: View {
     var entry: SimpleEntry
-    var body: some View {
-        VStack(alignment: .center, spacing: 4) {
-            Text(entry.subtitle)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.orange)
-            
-            Text(entry.title)
-                .font(.system(size: 14, weight: .bold))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-            
-            Text(entry.countdown)
-                .font(.system(size: 16, weight: .heavy))
-                .foregroundColor(.orange)
-        }
-        .widgetBackground(Color.black)
-    }
-}
-
-struct TaskLargeWidgetView: View {
-    var entry: SimpleEntry
+    @Environment(\.widgetFamily) var family
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("UPCOMING WORK")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.purple)
+            Text("DEADLINES").font(.system(size: 10, weight: .black)).foregroundColor(.orange)
             
-            ForEach(entry.tasks) { task in
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack {
-                        Text(task.title)
-                            .font(.system(size: 12, weight: .bold))
-                            .lineLimit(1)
-                        Spacer()
-                        Text(task.weight)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.blue)
-                    }
-                    HStack {
-                        Text(task.type)
-                            .font(.system(size: 9))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(task.time)
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
+            if let task = entry.nextTask {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(task.title).font(.system(size: 14, weight: .bold)).lineLimit(family == .systemSmall ? 2 : 1)
+                    Text(task.subject).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1)
+                }
+                
+                if family != .systemSmall {
+                    ForEach(entry.recentTasks) { item in
+                        HStack {
+                            Circle().fill(Color.orange).frame(width: 6, height: 6)
+                            Text(item.title).font(.system(size: 11)).lineLimit(1)
+                            Spacer()
+                            Text(item.time).font(.system(size: 10)).foregroundColor(.secondary)
+                        }
                     }
                 }
-                Divider().opacity(0.1)
+                
+                Spacer()
+                
+                HStack {
+                    if family != .systemSmall {
+                        Text(task.type).font(.system(size: 10, weight: .bold)).padding(.horizontal, 6).padding(.vertical, 2).background(Color.orange.opacity(0.1)).cornerRadius(4)
+                    }
+                    Spacer()
+                    Text(userDefaultsCountdown()).font(.system(size: 12, weight: .bold)).foregroundColor(.orange)
+                }
+            } else {
+                Text("All Caught Up!").font(.system(size: 14)).foregroundColor(.secondary).padding(.top, 4)
+                Spacer()
             }
-            if entry.tasks.isEmpty {
-                Text("No upcoming tasks")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
         }
-        .widgetBackground(Color.black)
+        .containerBackground(.background, for: .widget)
+    }
+    
+    func userDefaultsCountdown() -> String {
+        let userDefaults = UserDefaults(suiteName: "group.dev.albazeli.unitask")
+        return userDefaults?.string(forKey: "next_task_countdown") ?? ""
     }
 }
 
-struct LockScreenTaskView: View {
-    var entry: SimpleEntry
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(entry.title).font(.headline).lineLimit(1)
-            Text("\(entry.detail1) • \(entry.countdown)").font(.caption)
-        }
+// MARK: - Widget Bundle
+
+@main
+struct UniTaskWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        ClassWidget()
+        TaskWidget()
     }
 }
-
-struct LockScreenClassView: View {
-    var entry: SimpleEntry
-    var body: some View {
-        HStack {
-            Image(systemName: "book.fill")
-            Text(entry.detail1)
-            Text(entry.countdown).bold()
-        }
-    }
-}
-
-// --- Widgets ---
 
 struct ClassWidget: Widget {
-    let kind: String = "ClassWidget"
+    let kind: String = "dev.albazeli.unitask.classWidget"
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BaseProvider(widgetKind: kind)) { entry in
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
             ClassWidgetView(entry: entry)
         }
-        .configurationDisplayName("Next Class")
-        .description("Countdown to your next lesson.")
+        .configurationDisplayName("Class Schedule")
+        .description("Quick view of your next class.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
 struct TaskWidget: Widget {
-    let kind: String = "TaskWidget"
+    let kind: String = "dev.albazeli.unitask.taskWidget"
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BaseProvider(widgetKind: kind)) { entry in
-            if entry.tasks.count > 1 {
-                TaskLargeWidgetView(entry: entry)
-            } else {
-                TaskSmallWidgetView(entry: entry)
-            }
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            TaskWidgetView(entry: entry)
         }
-        .configurationDisplayName("Tasks & Work")
-        .description("Keep track of your deadlines.")
+        .configurationDisplayName("Tasks & Deadlines")
+        .description("Track your upcoming academic work.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
-    }
-}
-
-@available(iOS 16.0, *)
-struct LockScreenWidget: Widget {
-    let kind: String = "LockScreenWidget"
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BaseProvider(widgetKind: "TaskWidget")) { entry in
-            LockScreenTaskView(entry: entry)
-        }
-        .configurationDisplayName("Lock Screen Task")
-        .description("Next deadline at a glance.")
-        .supportedFamilies([.accessoryRectangular])
-    }
-}
-
-@available(iOS 16.0, *)
-struct LockScreenClassWidget: Widget {
-    let kind: String = "LockScreenClassWidget"
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BaseProvider(widgetKind: "ClassWidget")) { entry in
-            LockScreenClassView(entry: entry)
-        }
-        .configurationDisplayName("Lock Screen Class")
-        .description("Next class info.")
-        .supportedFamilies([.accessoryInline])
-    }
-}
-
-@main
-struct UniTaskWidgets: WidgetBundle {
-    @WidgetBundleBuilder
-    var body: some Widget {
-        ClassWidget()
-        TaskWidget()
-        if #available(iOS 16.0, *) {
-            LockScreenWidget()
-            LockScreenClassWidget()
-        }
     }
 }
