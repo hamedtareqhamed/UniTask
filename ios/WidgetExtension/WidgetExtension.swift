@@ -27,6 +27,18 @@ struct SimpleEntry: TimelineEntry {
     }
 }
 
+// MARK: - View Compatibility Extension
+
+extension View {
+    func widgetBackground(_ color: Color) -> some View {
+        if #available(iOS 17.0, *) {
+            return self.containerBackground(.background, for: .widget)
+        } else {
+            return self.background(color)
+        }
+    }
+}
+
 // MARK: - Provider
 
 struct Provider: TimelineProvider {
@@ -121,7 +133,7 @@ struct ClassWidgetView: View {
                 Spacer()
             }
         }
-        .containerBackground(.background, for: .widget)
+        .widgetBackground(.clear)
     }
 }
 
@@ -164,12 +176,48 @@ struct TaskWidgetView: View {
                 Spacer()
             }
         }
-        .containerBackground(.background, for: .widget)
+        .widgetBackground(.clear)
     }
     
     func userDefaultsCountdown() -> String {
         let userDefaults = UserDefaults(suiteName: "group.dev.albazeli.unitask")
         return userDefaults?.string(forKey: "next_task_countdown") ?? ""
+    }
+}
+
+// MARK: - Lock Screen Views
+
+struct LockScreenTaskView: View {
+    var entry: SimpleEntry
+    var body: some View {
+        VStack(alignment: .leading) {
+            if let task = entry.nextTask {
+                Text(task.title).font(.headline).lineLimit(1)
+                Text(userDefaultsCountdown()).font(.caption).bold()
+            } else {
+                Text("No Deadlines").italic()
+            }
+        }
+    }
+    
+    func userDefaultsCountdown() -> String {
+        let userDefaults = UserDefaults(suiteName: "group.dev.albazeli.unitask")
+        return userDefaults?.string(forKey: "next_task_countdown") ?? ""
+    }
+}
+
+struct LockScreenClassView: View {
+    var entry: SimpleEntry
+    var body: some View {
+        HStack {
+            Image(systemName: "book.fill")
+            if let data = entry.nextClass {
+                Text(data.room).bold()
+                Text(data.countdown)
+            } else {
+                Text("Free Time")
+            }
+        }
     }
 }
 
@@ -180,8 +228,12 @@ struct UniTaskWidgetBundle: WidgetBundle {
     var body: some Widget {
         ClassWidget()
         TaskWidget()
+        LockScreenTaskWidget()
+        LockScreenClassWidget()
     }
 }
+
+// MARK: - Widget Definitions
 
 struct ClassWidget: Widget {
     let kind: String = "dev.albazeli.unitask.classWidget"
@@ -204,5 +256,29 @@ struct TaskWidget: Widget {
         .configurationDisplayName("Tasks & Deadlines")
         .description("Track your upcoming academic work.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+
+struct LockScreenTaskWidget: Widget {
+    let kind: String = "dev.albazeli.unitask.lockTask"
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            LockScreenTaskView(entry: entry)
+        }
+        .configurationDisplayName("Next Deadline")
+        .description("View your next task on Lock Screen.")
+        .supportedFamilies([.accessoryRectangular])
+    }
+}
+
+struct LockScreenClassWidget: Widget {
+    let kind: String = "dev.albazeli.unitask.lockClass"
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            LockScreenClassView(entry: entry)
+        }
+        .configurationDisplayName("Next Class")
+        .description("Your next location at a glance.")
+        .supportedFamilies([.accessoryInline])
     }
 }
