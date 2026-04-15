@@ -537,6 +537,7 @@
 		};
 		37F3307C52693084820E91BD /* Profile */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -719,6 +720,7 @@
 		};
 		BE246B3B501A2D620DFE5A06 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -742,6 +744,7 @@
 		};
 		ED2AB6EF65D97DC58EE1F5C3 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;

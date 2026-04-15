@@ -51,6 +51,7 @@ class WidgetService {
         await HomeWidget.saveWidgetData('next_class_name', course.name);
         await HomeWidget.saveWidgetData('next_class_code', course.courseCode ?? '');
         await HomeWidget.saveWidgetData('next_class_type', next.type);
+        await HomeWidget.saveWidgetData('next_class_section', next.section);
         await HomeWidget.saveWidgetData('next_class_room', next.room ?? 'TBA');
         await HomeWidget.saveWidgetData('next_class_time', next.timeStr);
         
@@ -73,6 +74,8 @@ class WidgetService {
               subject: course.name,
               code: course.courseCode ?? '',
               deadline: a.deadline!,
+              weight: a.weight,
+              typeString: a.type.name.toUpperCase(),
             ));
           }
         }
@@ -98,8 +101,11 @@ class WidgetService {
             await HomeWidget.saveWidgetData('task_${i}_subject', t.subject);
             await HomeWidget.saveWidgetData('task_${i}_code', t.code);
             await HomeWidget.saveWidgetData('task_${i}_time', _formatDateShort(t.deadline));
+            await HomeWidget.saveWidgetData('task_${i}_weight', t.weight > 0 ? '${t.weight.toStringAsFixed(0)}%' : '');
+            await HomeWidget.saveWidgetData('task_${i}_type', t.typeString);
           } else {
             await HomeWidget.saveWidgetData('task_${i}_title', '');
+            await HomeWidget.saveWidgetData('task_${i}_weight', '');
           }
         }
         await HomeWidget.saveWidgetData('task_count', top5Count);
@@ -146,8 +152,17 @@ class _WidgetTask {
   final String subject;
   final String code;
   final DateTime deadline;
+  final double weight;
+  final String typeString;
 
-  _WidgetTask({required this.title, required this.subject, required this.code, required this.deadline});
+  _WidgetTask({
+    required this.title,
+    required this.subject,
+    required this.code,
+    required this.deadline,
+    required this.weight,
+    required this.typeString,
+  });
 }
 
 class _Slot {

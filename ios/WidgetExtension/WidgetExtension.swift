@@ -15,6 +15,8 @@ struct TaskEntry: Identifiable {
     let id = UUID()
     let title: String
     let time: String
+    let weight: String
+    let type: String
 }
 
 struct BaseProvider: TimelineProvider {
@@ -52,7 +54,9 @@ struct BaseProvider: TimelineProvider {
             for i in 0..<min(count, 5) {
                 tasks.append(TaskEntry(
                     title: userDefaults?.string(forKey: "task_\(i)_title") ?? "",
-                    time: userDefaults?.string(forKey: "task_\(i)_time") ?? ""
+                    time: userDefaults?.string(forKey: "task_\(i)_time") ?? "",
+                    weight: userDefaults?.string(forKey: "task_\(i)_weight") ?? "",
+                    type: userDefaults?.string(forKey: "task_\(i)_type") ?? ""
                 ))
             }
             
@@ -105,7 +109,7 @@ struct ClassWidgetView: View {
             }
             .font(.system(size: 12))
         }
-        .padding()
+        .containerBackground(for: .widget) { Color.black }
     }
 }
 
@@ -126,27 +130,38 @@ struct TaskSmallWidgetView: View {
                 .font(.system(size: 16, weight: .heavy))
                 .foregroundColor(.orange)
         }
-        .padding()
+        .containerBackground(for: .widget) { Color.black }
     }
 }
 
 struct TaskLargeWidgetView: View {
     var entry: SimpleEntry
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("UPCOMING WORK")
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.purple)
             
             ForEach(entry.tasks) { task in
-                HStack {
-                    Text(task.title)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                    Spacer()
-                    Text(task.time)
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack {
+                        Text(task.title)
+                            .font(.system(size: 12, weight: .bold))
+                            .lineLimit(1)
+                        Spacer()
+                        Text(task.weight)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.blue)
+                    }
+                    HStack {
+                        Text(task.type)
+                            .font(.system(size: 9))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(task.time)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Divider().opacity(0.1)
             }
@@ -157,7 +172,7 @@ struct TaskLargeWidgetView: View {
             }
             Spacer()
         }
-        .padding()
+        .containerBackground(for: .widget) { Color.black }
     }
 }
 

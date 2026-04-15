@@ -27,12 +27,16 @@ class TaskLargeWidgetProvider : HomeWidgetProvider() {
                 val rowIds = arrayOf(R.id.task_item_0, R.id.task_item_1, R.id.task_item_2, R.id.task_item_3, R.id.task_item_4)
                 val titleIds = arrayOf(R.id.task_0_title, R.id.task_1_title, R.id.task_2_title, R.id.task_3_title, R.id.task_4_title)
                 val timeIds = arrayOf(R.id.task_0_time, R.id.task_1_time, R.id.task_2_time, R.id.task_3_time, R.id.task_4_time)
+                val weightIds = arrayOf(R.id.task_0_weight, R.id.task_1_weight, R.id.task_2_weight, R.id.task_3_weight, R.id.task_4_weight)
+                val typeIds = arrayOf(R.id.task_0_type, R.id.task_1_type, R.id.task_2_type, R.id.task_3_type, R.id.task_4_type)
 
                 for (i in 0 until 5) {
                     if (i < count) {
                         setViewVisibility(rowIds[i], View.VISIBLE)
                         setTextViewText(titleIds[i], widgetData.getString("task_${i}_title", "") ?: "")
                         setTextViewText(timeIds[i], widgetData.getString("task_${i}_time", "") ?: "")
+                        setTextViewText(weightIds[i], widgetData.getString("task_${i}_weight", "") ?: "")
+                        setTextViewText(typeIds[i], widgetData.getString("task_${i}_type", "") ?: "")
                     } else {
                         setViewVisibility(rowIds[i], View.GONE)
                     }

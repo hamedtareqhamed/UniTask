@@ -67,4 +67,4 @@
 ## 📜 Copyright
 **© 2026 hamed albazeli. All rights reserved.**
 
-This project and its source code are strictly private and proprietary. No license is granted for reading, copying, modifying, compiling, or distributing this code without explicit prior permission from the author.
+All rights reserved. This project is currently **not licensed** for public use, modification, or distribution. You may only view the source code for learning purposes.
