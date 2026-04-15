@@ -734,6 +734,15 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"Flutter",
+				);
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Flutter",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.albazeli.unitask.WidgetExtension;
 				PRODUCT_NAME = WidgetExtension;
 				SDKROOT = iphoneos;
@@ -757,6 +766,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"Flutter",
+				);
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Flutter",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.albazeli.unitask.WidgetExtension;
 				PRODUCT_NAME = WidgetExtension;
