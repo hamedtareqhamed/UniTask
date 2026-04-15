@@ -1,0 +1,213 @@
+name: Release Builder
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      build_web:
+        description: 'Build Web'
+        required: true
+        type: boolean
+        default: true
+      build_android:
+        description: 'Build Android'
+        required: true
+        type: boolean
+        default: true
+      build_ios:
+        description: 'Build iOS'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build_web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_web == true)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Create .env
+        run: |
+          cat <<ENV_EOF > .env
+          FLUTTER_FIREBASE_API_KEY_WEB=${{ secrets.FLUTTER_FIREBASE_API_KEY_WEB }}
+          FLUTTER_FIREBASE_APP_ID_WEB=${{ secrets.FLUTTER_FIREBASE_APP_ID_WEB }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          ENV_EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release --dart-define-from-file=.env
+        
+      - name: Zip Web Build
+        run: |
+          cd build/web
+          zip -r ../../web-release.zip .
+          cd ../../
+
+      - name: Release Web
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: false
+          files: web-release.zip
+
+  build_android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_android == true)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Create .env
+        run: |
+          cat <<ENV_EOF > .env
+          FLUTTER_FIREBASE_API_KEY_ANDROID=${{ secrets.FLUTTER_FIREBASE_API_KEY_ANDROID }}
+          FLUTTER_FIREBASE_APP_ID_ANDROID=${{ secrets.FLUTTER_FIREBASE_APP_ID_ANDROID }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          ENV_EOF
+
+      - name: Inject Firebase Config (Android)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        run: flutter build apk --release --dart-define-from-file=.env
+
+      - name: Build Android Bundle
+        run: flutter build appbundle --release --dart-define-from-file=.env
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+
+      - name: Release Android
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: false
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+
+  build_ios:
+    name: Build iOS
+    runs-on: macos-latest
+    if: (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_ios == true)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          architecture: x64
+          
+      - name: Create .env
+        run: |
+          cat <<ENV_EOF > .env
+          FLUTTER_FIREBASE_API_KEY_IOS=${{ secrets.FLUTTER_FIREBASE_API_KEY_IOS }}
+          FLUTTER_FIREBASE_APP_ID_IOS=${{ secrets.FLUTTER_FIREBASE_APP_ID_IOS }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          IOS_CERTIFICATE_BASE64=${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD=${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64=${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD=${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          ENV_EOF
+
+      - name: Inject Firebase Config (iOS)
+        env:
+          GOOGLE_SERVICES_INFO_PLIST: ${{ secrets.GOOGLE_SERVICES_INFO_PLIST }}
+        run: echo "$GOOGLE_SERVICES_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
+
+      - name: Install dependencies
+        run:  flutter pub get
+      - name: Build iOS IPA
+        run: |
+          set -a
+          source .env
+          set +a
+
+          if [ -z "$IOS_CERTIFICATE_BASE64" ] || [ ${#IOS_CERTIFICATE_BASE64} -lt 10 ]; then
+            echo "No valid iOS Certificate provided. Building unsigned..."
+            # Use extra-gen-snapshot-options or similar is not needed, but we check the app folder
+            flutter build ios --release --no-codesign --dart-define-from-file=.env
+            
+            APP_PATH="build/ios/iphoneos/Runner.app"
+            if [ -d "$APP_PATH" ]; then
+              cd build/ios/iphoneos
+              mkdir -p Payload
+              cp -RP Runner.app Payload/
+              zip -qry ../../../ios-app-unsigned.ipa Payload
+              cd ../../../
+              echo "Unsigned IPA created: ios-app-unsigned.ipa"
+            else
+              echo "Error: Runner.app not found! Build might have failed silently."
+              exit 1
+            fi
+          else
+            CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+            PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+            KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+            echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+            echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+            security create-keychain -p "$IOS_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+            security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+            security unlock-keychain -p "$IOS_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+            security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+            security list-keychain -d user -s $KEYCHAIN_PATH
+
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+            
+            flutter build ipa --release --dart-define-from-file=.env
+            if [ -d "build/ios/ipa" ]; then
+              cp build/ios/ipa/*.ipa ios-app-signed.ipa
+            else
+               echo "Error: IPA folder not found!"
+               exit 1
+            fi
+          fi
+
+      - name: Release iOS
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          fail_on_unmatched_files: false
+          files: |
+            ios-app-unsigned.ipa
+            ios-app-signed.ipa
