@@ -70,7 +70,7 @@ jobs:
 
       - name: Inject Firebase Config
         run: |
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+          printf "%s" "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
       - name: Install dependencies
         run: flutter pub get
@@ -114,7 +114,7 @@ jobs:
 
       - name: Inject Firebase Config
         run: |
-          echo "${{ secrets.GOOGLE_SERVICES_INFO_PLIST }}" > ios/Runner/GoogleService-Info.plist
+          printf "%s" "${{ secrets.GOOGLE_SERVICES_INFO_PLIST }}" > ios/Runner/GoogleService-Info.plist
 
       - name: Install dependencies
         run: flutter pub get
