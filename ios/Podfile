@@ -55,10 +55,8 @@ post_install do |installer|
       # Force deployment target to 14.0 for all pods
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       
-      # Fix 'sharedApplication' is unavailable in App Extensions (for plugins like share_plus)
-      if ['share_plus', 'google_sign_in_ios', 'url_launcher_ios'].include?(target.name)
-        config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
-      end
+      # Fix 'sharedApplication' is unavailable in App Extensions (for plugins like share_plus and AppAuth)
+      config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
     end
   end
 end
