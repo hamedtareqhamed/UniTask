@@ -77,6 +77,16 @@ struct BaseProvider: TimelineProvider {
     }
 }
 
+extension View {
+    func widgetBackground(_ color: Color) -> some View {
+        if #available(iOS 17.0, *) {
+            return self.containerBackground(for: .widget) { color }
+        } else {
+            return self.background(color)
+        }
+    }
+}
+
 // --- Views ---
 
 struct ClassWidgetView: View {
@@ -109,7 +119,7 @@ struct ClassWidgetView: View {
             }
             .font(.system(size: 12))
         }
-        .containerBackground(for: .widget) { Color.black }
+        .widgetBackground(Color.black)
     }
 }
 
@@ -130,7 +140,7 @@ struct TaskSmallWidgetView: View {
                 .font(.system(size: 16, weight: .heavy))
                 .foregroundColor(.orange)
         }
-        .containerBackground(for: .widget) { Color.black }
+        .widgetBackground(Color.black)
     }
 }
 
@@ -172,7 +182,7 @@ struct TaskLargeWidgetView: View {
             }
             Spacer()
         }
-        .containerBackground(for: .widget) { Color.black }
+        .widgetBackground(Color.black)
     }
 }
 
