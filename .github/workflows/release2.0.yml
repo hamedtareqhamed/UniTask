@@ -1,4 +1,4 @@
-name: Release 2.0 (v1.0.10)
+name: Release 2.0 (1.11)
 
 on:
   workflow_dispatch:
@@ -205,9 +205,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create v1.0.10 \
-            --title "UniTask v1.0.10" \
-            --notes "Production Release for UniTask v1.0.10. Includes Web, Android, and iOS builds." \
+          gh release create 1.11 \
+            --title "UniTask 1.11" \
+            --notes "Production Release for UniTask 1.11. Includes Web, Android, and iOS builds." \
             web-build.zip \
             app-release.apk \
             app-release.aab \
@@ -215,5 +215,5 @@ jobs:
           
           # If signed IPA exists, upload it too
           if [ -f "ios-app-signed.ipa" ]; then
-            gh release upload v1.0.10 ios-app-signed.ipa --clobber
+            gh release upload 1.11 ios-app-signed.ipa --clobber
           fi
