@@ -44,7 +44,7 @@ class StorageService {
     } else {
       await prefs.setString(_activeSemesterKey, id);
     }
-    await WidgetService.updateNextClassWidget();
+    await WidgetService.updateAllWidgets();
   }
 
   static Future<String?> loadActiveSemesterId() async {

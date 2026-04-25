@@ -9,6 +9,7 @@ class Task {
     this.isCompleted = false,
     this.deadline,
     this.semesterId,
+    this.reminderMinutes,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +18,7 @@ class Task {
       'isCompleted': isCompleted,
       'deadline': deadline?.toIso8601String(),
       'semesterId': semesterId,
+      'reminderMinutes': reminderMinutes,
     };
   }
 
@@ -26,7 +28,9 @@ class Task {
       isCompleted: map['isCompleted'] ?? false,
       deadline: map['deadline'] != null ? DateTime.parse(map['deadline']) : null,
       semesterId: map['semesterId'],
+      reminderMinutes: map['reminderMinutes'],
     );
   }
+  int? reminderMinutes;
 }
 

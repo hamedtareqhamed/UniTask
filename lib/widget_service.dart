@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 class WidgetService {
   static const String _groupId = 'group.dev.albazeli.unitask';
   static const String _androidWidgetName = 'CountdownWidgetProvider';
-  static const String _iosWidgetName = 'WidgetExtension';
 
   /// Updates the home screen widget with the next class info and top 5 tasks.
   static Future<void> updateAllWidgets() async {
@@ -114,13 +113,17 @@ class WidgetService {
         await HomeWidget.saveWidgetData('task_count', 0);
       }
 
-      // Trigger update
-      debugPrint('WidgetService: Attempting to update widgets (Android: $_androidWidgetName, iOS: $_iosWidgetName)');
+      // Trigger update for both widget types on iOS
+      debugPrint('WidgetService: Updating widgets...');
       await HomeWidget.updateWidget(
         name: _androidWidgetName,
-        iOSName: _iosWidgetName,
+        iOSName: 'dev.albazeli.unitask.classWidget',
       );
-      debugPrint('WidgetService: Widget update call successful');
+      await HomeWidget.updateWidget(
+        name: _androidWidgetName,
+        iOSName: 'dev.albazeli.unitask.taskWidget',
+      );
+      debugPrint('WidgetService: Widget update calls completed');
     } catch (e) {
       debugPrint('Error updating widget: $e');
     }

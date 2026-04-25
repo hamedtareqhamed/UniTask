@@ -4,6 +4,7 @@ import 'course_model.dart';
 import 'storage_service.dart';
 import 'note_model.dart';
 import 'gpa_utils.dart';
+import 'notification_service.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final Course course;
@@ -318,6 +319,104 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     );
   }
 
+  void _showReminderDialog(Assessment a) {
+    int value = 30;
+    String unit = 'minutes';
+    
+    // Attempt to pre-fill from existing reminderMinutes
+    if (a.reminderMinutes != null) {
+      if (a.reminderMinutes! % 1440 == 0) {
+        unit = 'days';
+        value = a.reminderMinutes! ~/ 1440;
+      } else if (a.reminderMinutes! % 60 == 0) {
+        unit = 'hours';
+        value = a.reminderMinutes! ~/ 60;
+      } else {
+        unit = 'minutes';
+        value = a.reminderMinutes!;
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set Reminder'),
+        content: StatefulBuilder(
+          builder: (context, setDimState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Remind me before this deadline:'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Amount'),
+                      onChanged: (v) => value = int.tryParse(v) ?? 0,
+                      controller: TextEditingController(text: value.toString()),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  DropdownButton<String>(
+                    value: unit,
+                    onChanged: (v) => setDimState(() => unit = v!),
+                    items: ['minutes', 'hours', 'days']
+                        .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await NotificationService.cancelNotification(a.id.hashCode);
+              setState(() {
+                a.reminderMinutes = null;
+              });
+              _saveCourse();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Remove Reminder', style: TextStyle(color: Colors.redAccent)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (a.deadline == null) return;
+              
+              int totalMinutes = value;
+              if (unit == 'hours') totalMinutes *= 60;
+              if (unit == 'days') totalMinutes *= 1440;
+              
+              final scheduledTime = a.deadline!.subtract(Duration(minutes: totalMinutes));
+              
+              if (scheduledTime.isBefore(DateTime.now())) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Reminder time is in the past!')));
+                return;
+              }
+
+              await NotificationService.scheduleNotification(
+                id: a.id.hashCode,
+                title: 'Upcoming Assessment: ${a.title}',
+                body: 'Your ${a.type.name} is due in $value $unit!',
+                scheduledDate: scheduledTime,
+              );
+
+              setState(() {
+                a.reminderMinutes = totalMinutes;
+              });
+              _saveCourse();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _deleteAssessment(Assessment assessment) {
     setState(() {
       _course.assessments.remove(assessment);
@@ -520,6 +619,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 fontWeight: FontWeight.bold,
                 color: a.score == null ? Colors.grey : null,
               ),
+            ),
+            IconButton(
+              onPressed: a.deadline == null ? null : () => _showReminderDialog(a),
+              icon: Icon(
+                a.reminderMinutes != null ? Icons.notifications_active : Icons.notifications_outlined,
+                color: a.reminderMinutes != null ? Colors.orangeAccent : Colors.grey,
+                size: 20,
+              ),
+              tooltip: 'Set Reminder',
             ),
             IconButton(
               onPressed: () => _showAssessmentDialog(assessment: a),

@@ -6,6 +6,7 @@ import 'task_model.dart';
 import 'storage_service.dart';
 import 'course_model.dart';
 import 'gpa_utils.dart';
+import 'notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -359,10 +360,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         leading: Checkbox(value: item.isCompleted, onChanged: (val) => _toggleItemCompletion(item)),
         title: Text(item.title, style: TextStyle(decoration: item.isCompleted ? TextDecoration.lineThrough : null)),
         subtitle: Text(item.subtitle),
-        trailing: item.deadline != null
-            ? Text(DateFormat('MMM d, h:mm a').format(item.deadline!),
-                style: TextStyle(color: isUrgent ? Colors.redAccent : Colors.grey, fontSize: 11))
-            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (item.deadline != null) ...[
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  item.reminderMinutes != null ? Icons.notifications_active : Icons.notifications_outlined,
+                  color: item.reminderMinutes != null ? Colors.orangeAccent : Colors.grey,
+                  size: 18,
+                ),
+                onPressed: () => _showReminderDialog(item),
+              ),
+              const SizedBox(width: 8),
+              Text(DateFormat('MMM d, h:mm a').format(item.deadline!),
+                  style: TextStyle(color: isUrgent ? Colors.redAccent : Colors.grey, fontSize: 11)),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -374,6 +391,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } else {
       StorageService.saveTasks(_allTasks);
     }
+  }
+
+  void _showReminderDialog(_DashboardItem item) {
+    int value = 30;
+    String unit = 'minutes';
+    
+    if (item.reminderMinutes != null) {
+      if (item.reminderMinutes! % 1440 == 0) {
+        unit = 'days';
+        value = item.reminderMinutes! ~/ 1440;
+      } else if (item.reminderMinutes! % 60 == 0) {
+        unit = 'hours';
+        value = item.reminderMinutes! ~/ 60;
+      } else {
+        unit = 'minutes';
+        value = item.reminderMinutes!;
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set Reminder'),
+        content: StatefulBuilder(
+          builder: (context, setDimState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Remind me before this deadline:'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Amount'),
+                      onChanged: (v) => value = int.tryParse(v) ?? 0,
+                      controller: TextEditingController(text: value.toString()),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  DropdownButton<String>(
+                    value: unit,
+                    onChanged: (v) => setDimState(() => unit = v!),
+                    items: ['minutes', 'hours', 'days']
+                        .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await NotificationService.cancelNotification(item.id.hashCode);
+              setState(() {
+                item.setReminder(null);
+              });
+              if (item.sourceType == _SourceType.assessment) {
+                StorageService.saveCourses(_allCourses);
+              } else {
+                StorageService.saveTasks(_allTasks);
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Remove Reminder', style: TextStyle(color: Colors.redAccent)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (item.deadline == null) return;
+              
+              int totalMinutes = value;
+              if (unit == 'hours') totalMinutes *= 60;
+              if (unit == 'days') totalMinutes *= 1440;
+              
+              final scheduledTime = item.deadline!.subtract(Duration(minutes: totalMinutes));
+              
+              if (scheduledTime.isBefore(DateTime.now())) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Reminder time is in the past!')));
+                return;
+              }
+
+              await NotificationService.scheduleNotification(
+                id: item.id.hashCode,
+                title: 'Upcoming: ${item.title}',
+                body: '${item.subtitle} is due in $value $unit!',
+                scheduledDate: scheduledTime,
+              );
+
+              setState(() {
+                item.setReminder(totalMinutes);
+              });
+              if (item.sourceType == _SourceType.assessment) {
+                StorageService.saveCourses(_allCourses);
+              } else {
+                StorageService.saveTasks(_allTasks);
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -411,14 +533,27 @@ class _NextClass {
 enum _SourceType { assessment, task }
 
 class _DashboardItem {
+  final String id;
   final String title;
   final String subtitle;
   final DateTime? deadline;
   final _SourceType sourceType;
   final Function() internalToggle;
+  final Function(int?) setReminder;
   final bool isCompleted;
+  final int? reminderMinutes;
 
-  _DashboardItem({required this.title, required this.subtitle, this.deadline, required this.sourceType, required this.internalToggle, required this.isCompleted});
+  _DashboardItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    this.deadline,
+    required this.sourceType,
+    required this.internalToggle,
+    required this.setReminder,
+    required this.isCompleted,
+    this.reminderMinutes,
+  });
 
   factory _DashboardItem.fromAssessment(Assessment a, Course c) {
     return _DashboardItem(
@@ -427,7 +562,10 @@ class _DashboardItem {
       deadline: a.deadline,
       sourceType: _SourceType.assessment,
       isCompleted: a.isCompleted,
+      reminderMinutes: a.reminderMinutes,
       internalToggle: () => a.isCompleted = !a.isCompleted,
+      setReminder: (mins) => a.reminderMinutes = mins,
+      id: a.id,
     );
   }
 
@@ -438,7 +576,10 @@ class _DashboardItem {
       deadline: t.deadline,
       sourceType: _SourceType.task,
       isCompleted: t.isCompleted,
+      reminderMinutes: t.reminderMinutes,
       internalToggle: () => t.isCompleted = !t.isCompleted,
+      setReminder: (mins) => t.reminderMinutes = mins,
+      id: t.name, // Task uses name as ID for simplicity or should we use hashCode?
     );
   }
 }

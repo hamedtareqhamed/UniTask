@@ -16,9 +16,10 @@ class Assessment {
   AssessmentCategory category;
   double? score; // Changed to nullable
   double maxScore;
-  double weight; // Represents Absolute Points
+  double weight;
   DateTime? deadline;
   bool isCompleted;
+  int? reminderMinutes; // New field for notifications
 
   Assessment({
     required this.id,
@@ -30,6 +31,7 @@ class Assessment {
     required this.weight,
     this.deadline,
     this.isCompleted = false,
+    this.reminderMinutes,
   });
 
   Map<String, dynamic> toMap() {
@@ -43,6 +45,7 @@ class Assessment {
       'weight': weight,
       'deadline': deadline?.toIso8601String(),
       'isCompleted': isCompleted,
+      'reminderMinutes': reminderMinutes,
     };
   }
 
@@ -59,6 +62,7 @@ class Assessment {
           ? DateTime.parse(map['deadline'])
           : null,
       isCompleted: map['isCompleted'] ?? false,
+      reminderMinutes: map['reminderMinutes'],
     );
   }
 }

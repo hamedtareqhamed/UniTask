@@ -58,44 +58,53 @@ struct Provider: TimelineProvider {
         completion(entry)
     }
 
+    private func fetchString(from prefs: UserDefaults?, key: String) -> String {
+        if let val = prefs?.string(forKey: key), !val.isEmpty { return val }
+        if let val = prefs?.string(forKey: "widgetData-\(key)"), !val.isEmpty { return val }
+        return ""
+    }
+
     func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> ()) {
         let userDefaults = UserDefaults(suiteName: suiteName)
+        userDefaults?.synchronize() // Force synchronization for older iOS or TrollStore environments
         let now = Date()
         
         // --- Fetch Class Data ---
-        let className = userDefaults?.string(forKey: "next_class_name") ?? ""
+        let className = fetchString(from: userDefaults, key: "next_class_name")
         let nextClass = SimpleEntry.ClassData(
             name: className,
-            code: userDefaults?.string(forKey: "next_class_code") ?? "",
-            room: userDefaults?.string(forKey: "next_class_room") ?? "",
-            type: userDefaults?.string(forKey: "next_class_type") ?? "",
-            countdown: userDefaults?.string(forKey: "next_class_countdown") ?? ""
+            code: fetchString(from: userDefaults, key: "next_class_code"),
+            room: fetchString(from: userDefaults, key: "next_class_room"),
+            type: fetchString(from: userDefaults, key: "next_class_type"),
+            countdown: fetchString(from: userDefaults, key: "next_class_countdown")
         )
         
         // --- Fetch Task Data ---
-        let taskTitle = userDefaults?.string(forKey: "next_task_title") ?? ""
+        let taskTitle = fetchString(from: userDefaults, key: "next_task_title")
         let nextTask = TaskEntryData(
             id: "primary",
             title: taskTitle,
-            subject: userDefaults?.string(forKey: "next_task_subject") ?? "",
+            subject: fetchString(from: userDefaults, key: "next_task_subject"),
             time: "", 
             weight: "", 
-            type: userDefaults?.string(forKey: "next_task_type") ?? ""
+            type: fetchString(from: userDefaults, key: "next_task_type")
         )
         
         // --- Fetch Recent Tasks ---
         var recentTasks: [TaskEntryData] = []
-        let count = userDefaults?.integer(forKey: "task_count") ?? 0
+        var count = userDefaults?.integer(forKey: "task_count") ?? 0
+        if count == 0 { count = userDefaults?.integer(forKey: "widgetData-task_count") ?? 0 }
+        
         for i in 0..<min(count, 5) {
-            let tTitle = userDefaults?.string(forKey: "task_\(i)_title") ?? ""
+            let tTitle = fetchString(from: userDefaults, key: "task_\(i)_title")
             if !tTitle.isEmpty {
                 recentTasks.append(TaskEntryData(
                     id: "\(i)",
                     title: tTitle,
-                    subject: userDefaults?.string(forKey: "task_\(i)_subject") ?? "",
-                    time: userDefaults?.string(forKey: "task_\(i)_time") ?? "",
-                    weight: userDefaults?.string(forKey: "task_\(i)_weight") ?? "",
-                    type: userDefaults?.string(forKey: "task_\(i)_type") ?? ""
+                    subject: fetchString(from: userDefaults, key: "task_\(i)_subject"),
+                    time: fetchString(from: userDefaults, key: "task_\(i)_time"),
+                    weight: fetchString(from: userDefaults, key: "task_\(i)_weight"),
+                    type: fetchString(from: userDefaults, key: "task_\(i)_type")
                 ))
             }
         }
@@ -212,7 +221,8 @@ struct TaskWidgetView: View {
     
     func userDefaultsKey(_ key: String) -> String {
         let userDefaults = UserDefaults(suiteName: "group.dev.albazeli.unitask")
-        return userDefaults?.string(forKey: key) ?? ""
+        if let val = userDefaults?.string(forKey: key), !val.isEmpty { return val }
+        return userDefaults?.string(forKey: "widgetData-\(key)") ?? ""
     }
 }
 
@@ -232,7 +242,8 @@ struct LockScreenTaskView: View {
     }
     func userDefaultsKey(_ key: String) -> String {
         let userDefaults = UserDefaults(suiteName: "group.dev.albazeli.unitask")
-        return userDefaults?.string(forKey: key) ?? ""
+        if let val = userDefaults?.string(forKey: key), !val.isEmpty { return val }
+        return userDefaults?.string(forKey: "widgetData-\(key)") ?? ""
     }
 }
 
