@@ -135,6 +135,13 @@ jobs:
             APP_PATH="build/ios/iphoneos/Runner.app"
             if [ -d "$APP_PATH" ]; then
               cd build/ios/iphoneos
+              
+              # Ad-hoc sign with entitlements so TrollStore recognizes App Groups
+              codesign -f -s - --entitlements ../../../ios/Runner/Runner.entitlements Runner.app || echo "Runner signing failed"
+              if [ -d "Runner.app/PlugIns/WidgetExtension.appex" ]; then
+                codesign -f -s - --entitlements ../../../ios/WidgetExtension/WidgetExtension.entitlements Runner.app/PlugIns/WidgetExtension.appex || echo "Widget signing failed"
+              fi
+              
               mkdir -p Payload
               cp -R Runner.app Payload/
               zip -q -r ../../../ios-app-unsigned.ipa Payload
