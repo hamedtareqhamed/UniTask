@@ -6,6 +6,8 @@ import 'task_model.dart';
 import 'storage_service.dart';
 import 'course_model.dart';
 import 'gpa_utils.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -40,6 +42,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     // Sync to widgets
     WidgetService.updateAllWidgets();
+  }
+
+  Future<void> _showSyncLogDialog() async {
+    String logText = "Starting Widget Sync Debug...\n";
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final activeId = prefs.getString('active_semester');
+      logText += "Active Semester ID: $activeId\n";
+
+      await WidgetService.updateAllWidgets();
+      logText += "updateAllWidgets() completed.\n";
+
+      // Test retrieval directly from HomeWidget
+      final nextClassName = await HomeWidget.getWidgetData<String>('next_class_name');
+      final taskCount = await HomeWidget.getWidgetData<int>('task_count');
+      final taskTitle = await HomeWidget.getWidgetData<String>('next_task_title');
+
+      logText += "\nData supposedly in UserDefaults:\n";
+      logText += "next_class_name: $nextClassName\n";
+      logText += "task_count: $taskCount\n";
+      logText += "next_task_title: $taskTitle\n";
+
+    } catch (e) {
+      logText += "\nERROR: $e\n";
+    }
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Widget Sync Log'),
+        content: SingleChildScrollView(child: Text(logText)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))
+        ],
+      )
+    );
   }
 
   @override
@@ -119,6 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('UniTask Dashboard'),
         actions: [
+          IconButton(onPressed: _showSyncLogDialog, icon: const Icon(Icons.bug_report, color: Colors.orange)),
           IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
         ],
       ),
